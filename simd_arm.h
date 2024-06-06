@@ -6,7 +6,7 @@
 #include <arm_neon.h>
 #include <bit>
 
-template <> struct PathDefinition<Path::Neon> {
+template <> struct SimdDefinition<Simd::Neon> {
   using Reg = uint64x2_t;
   static const char *name() { return "NEON"; }
   static bool detectCpu() { return true; }

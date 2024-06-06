@@ -6,7 +6,7 @@
 #include <bit>
 #include <cstdint>
 
-template <> struct PathDefinition<Path::Uint64> {
+template <> struct SimdDefinition<Simd::Uint64> {
   using Reg = uint64_t;
   static const char *name() { return "Uint64"; }
   static bool detectCpu() { return true; }

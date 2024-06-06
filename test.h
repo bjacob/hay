@@ -13,16 +13,16 @@ void printTestLogLine(const char *header, const char *testname,
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
 
-template <Path p>
+template <Simd p>
 static void printTestLogLine(const char *header, const char *testname) {
-  using PT = PathTraits<p>;
+  using PT = SimdTraits<p>;
   printTestLogLine(header, testname, PT::name(), PT::RegBits);
 }
 
-template <template <Path> class TestClass, Path p>
-void TestOnePath(const char *testname) {
+template <template <Simd> class TestClass, Simd p>
+void TestOneSimd(const char *testname) {
   printTestLogLine<p>("[ RUN     ]", testname);
-  if (PathTraits<p>::detectCpu()) {
+  if (SimdTraits<p>::detectCpu()) {
     TestClass<p>::Run();
     printTestLogLine<p>("[      OK ]", testname);
   } else {
@@ -30,22 +30,22 @@ void TestOnePath(const char *testname) {
   }
 }
 
-template <template <Path> class TestClass> void Test(const char *testname) {
-  TestOnePath<TestClass, Path::Uint64>(testname);
+template <template <Simd> class TestClass> void Test(const char *testname) {
+  TestOneSimd<TestClass, Simd::Uint64>(testname);
 #ifdef __aarch64__
-  TestOnePath<TestClass, Path::Neon>(testname);
+  TestOneSimd<TestClass, Simd::Neon>(testname);
 #endif
 #ifdef __x86_64__
-  TestOnePath<TestClass, Path::Avx2>(testname);
-  TestOnePath<TestClass, Path::Avx512>(testname);
-  TestOnePath<TestClass, Path::Avx512Bitalg>(testname);
+  TestOneSimd<TestClass, Simd::Avx2>(testname);
+  TestOneSimd<TestClass, Simd::Avx512>(testname);
+  TestOneSimd<TestClass, Simd::Avx512Bitalg>(testname);
 #endif
 }
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
 
-template <Path p> PathTraits<p>::Reg getRandomReg() {
-  using PT = PathTraits<p>;
+template <Simd p> SimdTraits<p>::Reg getRandomReg() {
+  using PT = SimdTraits<p>;
   uint32_t buf[PT::RegBytes / sizeof(uint32_t)];
   std::minstd_rand0 engine;
   for (uint32_t &val : buf) {

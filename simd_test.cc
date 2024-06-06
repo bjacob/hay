@@ -1,9 +1,9 @@
 #include "hay.h"
 #include "test.h"
 
-template <Path p> struct TestRegLoadStore {
+template <Simd p> struct TestRegLoadStore {
   static void Run() {
-    using PT = PathTraits<p>;
+    using PT = SimdTraits<p>;
     uint8_t buf[2 * PT::RegBytes];
     for (int i = 0; i < 2 * PT::RegBytes; ++i) {
       buf[i] = i;
@@ -18,9 +18,9 @@ template <Path p> struct TestRegLoadStore {
   }
 };
 
-template <Path p> struct TestRegArithmetic {
+template <Simd p> struct TestRegArithmetic {
   static void Run() {
-    using PT = PathTraits<p>;
+    using PT = SimdTraits<p>;
     CHECK(PT::equal(PT::zero(), PT::zero()));
     CHECK(PT::equal(PT::ones(), PT::ones()));
     CHECK(!PT::equal(PT::zero(), PT::ones()));
@@ -44,9 +44,9 @@ template <Path p> struct TestRegArithmetic {
   }
 };
 
-template <Path p> struct TestRegWaveAndPopcount {
+template <Simd p> struct TestRegWaveAndPopcount {
   static void Run() {
-    using PT = PathTraits<p>;
+    using PT = SimdTraits<p>;
     CHECK(PT::popcount(PT::zero()) == 0);
     CHECK(PT::popcount(PT::ones()) == PT::RegBits);
     for (int i = 0; (1 << i) < PT::RegBits; ++i) {
@@ -64,9 +64,9 @@ template <Path p> struct TestRegWaveAndPopcount {
   }
 };
 
-template <Path p> struct TestRegWaveAsBitSlicedSequence {
+template <Simd p> struct TestRegWaveAsBitSlicedSequence {
   static void Run() {
-    using PT = PathTraits<p>;
+    using PT = SimdTraits<p>;
     constexpr int numslices = 1 + __builtin_ctz(PT::RegBits);
     uint8_t slices[PT::RegBytes * numslices];
     for (int i = 0; i < numslices; ++i) {
