@@ -1,7 +1,7 @@
 #ifndef HAY_TEST_H_
 #define HAY_TEST_H_
 
-#include "path.h"
+#include "simd.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -9,7 +9,7 @@
 
 void check_impl(bool cond, const char *condstr, const char *file, int line);
 void printTestLogLine(const char *header, const char *testname,
-                      const char *pathname, int regbits);
+                      const char *simdname, int regbits);
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
 
@@ -33,12 +33,12 @@ void TestOnePath(const char *testname) {
 template <template <Path> class TestClass> void Test(const char *testname) {
   TestOnePath<TestClass, Path::Uint64>(testname);
 #ifdef __aarch64__
-  TestOnePath<TestClass, Path::ArmNeon>(testname);
+  TestOnePath<TestClass, Path::Neon>(testname);
 #endif
 #ifdef __x86_64__
-  TestOnePath<TestClass, Path::X86Avx2>(testname);
-  TestOnePath<TestClass, Path::X86Avx512>(testname);
-  TestOnePath<TestClass, Path::X86Avx512Bitalg>(testname);
+  TestOnePath<TestClass, Path::Avx2>(testname);
+  TestOnePath<TestClass, Path::Avx512>(testname);
+  TestOnePath<TestClass, Path::Avx512Bitalg>(testname);
 #endif
 }
 

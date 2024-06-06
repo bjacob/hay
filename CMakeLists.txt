@@ -30,9 +30,9 @@ cc_library(
 
 cc_test(
     NAME
-        "path_test"
+        "simd_test"
     SRCS
-        "path_test.cc"
+        "simd_test.cc"
     DEPS
         "hay"
         "testlib"

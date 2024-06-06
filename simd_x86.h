@@ -1,0 +1,4 @@
+#ifndef HAY_SIMD_X86_AVX512_H_
+#define HAY_SIMD_X86_AVX512_H_
+
+#endif // HAY_SIMD_X86_AVX512_H_

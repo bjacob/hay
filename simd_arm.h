@@ -1,14 +1,14 @@
-#ifndef HAY_PATH_ARM_NEON_H_
-#define HAY_PATH_ARM_NEON_H_
+#ifndef HAY_SIMD_ARM_NEON_H_
+#define HAY_SIMD_ARM_NEON_H_
 
-#include "path_base.h"
+#include "simd_base.h"
 
 #include <arm_neon.h>
 #include <bit>
 
-template <> struct PathDefinition<Path::ArmNeon> {
+template <> struct PathDefinition<Path::Neon> {
   using Reg = uint64x2_t;
-  static const char *name() { return "Arm NEON"; }
+  static const char *name() { return "NEON"; }
   static bool detectCpu() { return true; }
   static Reg add(Reg x, Reg y) { return veorq_u64(x, y); }
   static Reg mul(Reg x, Reg y) { return vandq_u64(x, y); }
@@ -51,4 +51,4 @@ template <> struct PathDefinition<Path::ArmNeon> {
   }
 };
 
-#endif // HAY_PATH_ARM_NEON_H_
+#endif // HAY_SIMD_ARM_NEON_H_

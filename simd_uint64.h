@@ -1,7 +1,7 @@
-#ifndef HAY_PATH_UINT64_H_
-#define HAY_PATH_UINT64_H_
+#ifndef HAY_SIMD_UINT64_H_
+#define HAY_SIMD_UINT64_H_
 
-#include "path_base.h"
+#include "simd_base.h"
 
 #include <bit>
 #include <cstdint>
@@ -39,4 +39,4 @@ template <> struct PathDefinition<Path::Uint64> {
   }
 };
 
-#endif // HAY_PATH_UINT64_H_
+#endif // HAY_SIMD_UINT64_H_

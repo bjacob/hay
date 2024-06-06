@@ -8,7 +8,6 @@ void check_impl(bool cond, const char *condstr, const char *file, int line) {
 }
 
 void printTestLogLine(const char *header, const char *testname,
-                      const char *pathname, int regbits) {
-  fprintf(stderr, "%s  %s, path: %s (%d-bit)\n", header, testname, pathname,
-          regbits);
+                      const char *simdname, int regbits) {
+  fprintf(stderr, "%s  %s, %s (%d-bit)\n", header, testname, simdname, regbits);
 }

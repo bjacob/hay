@@ -1,11 +1,10 @@
-#ifndef HAY_PATH_BASE_H_
-#define HAY_PATH_BASE_H_
+#ifndef HAY_SIMD_BASE_H_
+#define HAY_SIMD_BASE_H_
 
 enum class Path {
   Uint64,
-  ArmNeon,
-  X86Avx2,
-  X86Avx512,
+  Neon,
+  Avx512,
 };
 
 template <Path p> struct PathDefinition {};
@@ -17,4 +16,4 @@ template <Path p> struct PathTraits : PathDefinition<p> {
   static constexpr int RegBits = 8 * RegBytes;
 };
 
-#endif // HAY_PATH_BASE_H_
+#endif // HAY_SIMD_BASE_H_
