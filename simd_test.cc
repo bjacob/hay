@@ -1,81 +1,87 @@
-#include "hay.h"
-#include "test.h"
+// Copyright 2024 The Hay Authors
+//
+// Licensed under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-template <Simd p> struct TestRegLoadStore {
+#include "hay.h"
+#include "testlib.h"
+
+template <Simd s> struct TestRegLoadStore {
   static void Run() {
-    using PT = SimdTraits<p>;
-    uint8_t buf[2 * PT::RegBytes];
-    for (int i = 0; i < 2 * PT::RegBytes; ++i) {
+    using ST = SimdTraits<s>;
+    uint8_t buf[2 * ST::RegBytes];
+    for (int i = 0; i < 2 * ST::RegBytes; ++i) {
       buf[i] = i;
     }
-    using Reg = PT::Reg;
-    Reg x = PT::load(buf);
-    Reg y = PT::load(buf + PT::RegBytes);
-    CHECK(!PT::equal(x, y));
-    PT::store(buf, y);
-    CHECK(PT::equal(y, PT::load(buf)));
-    CHECK(!memcmp(buf, buf + PT::RegBytes, PT::RegBytes));
+    using Reg = ST::Reg;
+    Reg x = ST::load(buf);
+    Reg y = ST::load(buf + ST::RegBytes);
+    CHECK(!ST::equal(x, y));
+    ST::store(buf, y);
+    CHECK(ST::equal(y, ST::load(buf)));
+    CHECK(!memcmp(buf, buf + ST::RegBytes, ST::RegBytes));
   }
 };
 
-template <Simd p> struct TestRegArithmetic {
+template <Simd s> struct TestRegArithmetic {
   static void Run() {
-    using PT = SimdTraits<p>;
-    CHECK(PT::equal(PT::zero(), PT::zero()));
-    CHECK(PT::equal(PT::ones(), PT::ones()));
-    CHECK(!PT::equal(PT::zero(), PT::ones()));
-    using Reg = PT::Reg;
-    Reg x = getRandomReg<p>();
-    Reg y = getRandomReg<p>();
-    Reg z = getRandomReg<p>();
-    CHECK(PT::equal(x, x));
-    CHECK(!PT::equal(PT::add(x, PT::ones()), x));
-    CHECK(PT::equal(PT::add(x, x), PT::zero()));
-    CHECK(PT::equal(PT::add(x, PT::zero()), x));
-    CHECK(PT::equal(PT::add(x, y), PT::add(y, x)));
-    CHECK(PT::equal(PT::add(PT::add(x, y), z), PT::add(x, PT::add(y, z))));
-    CHECK(PT::equal(PT::mul(x, x), x));
-    CHECK(PT::equal(PT::mul(x, PT::ones()), x));
-    CHECK(PT::equal(PT::mul(x, y), PT::mul(y, x)));
-    CHECK(PT::equal(PT::mul(PT::mul(x, y), z), PT::mul(x, PT::mul(y, z))));
-    CHECK(PT::equal(PT::mul(x, PT::add(y, z)),
-                    PT::add(PT::mul(x, z), PT::mul(y, z))));
-    CHECK(PT::equal(PT::madd(x, y, z), PT::add(x, PT::mul(y, z))));
+    using ST = SimdTraits<s>;
+    CHECK(ST::equal(ST::zero(), ST::zero()));
+    CHECK(ST::equal(ST::ones(), ST::ones()));
+    CHECK(!ST::equal(ST::zero(), ST::ones()));
+    using Reg = ST::Reg;
+    Reg x = getRandomReg<s>();
+    Reg y = getRandomReg<s>();
+    Reg z = getRandomReg<s>();
+    CHECK(ST::equal(x, x));
+    CHECK(!ST::equal(ST::add(x, ST::ones()), x));
+    CHECK(ST::equal(ST::add(x, x), ST::zero()));
+    CHECK(ST::equal(ST::add(x, ST::zero()), x));
+    CHECK(ST::equal(ST::add(x, y), ST::add(y, x)));
+    CHECK(ST::equal(ST::add(ST::add(x, y), z), ST::add(x, ST::add(y, z))));
+    CHECK(ST::equal(ST::mul(x, x), x));
+    CHECK(ST::equal(ST::mul(x, ST::ones()), x));
+    CHECK(ST::equal(ST::mul(x, y), ST::mul(y, x)));
+    CHECK(ST::equal(ST::mul(ST::mul(x, y), z), ST::mul(x, ST::mul(y, z))));
+    CHECK(ST::equal(ST::mul(x, ST::add(y, z)),
+                    ST::add(ST::mul(x, z), ST::mul(y, z))));
+    CHECK(ST::equal(ST::madd(x, y, z), ST::add(x, ST::mul(y, z))));
   }
 };
 
-template <Simd p> struct TestRegWaveAndPopcount {
+template <Simd s> struct TestRegWaveAndPopcount {
   static void Run() {
-    using PT = SimdTraits<p>;
-    CHECK(PT::popcount(PT::zero()) == 0);
-    CHECK(PT::popcount(PT::ones()) == PT::RegBits);
-    for (int i = 0; (1 << i) < PT::RegBits; ++i) {
-      CHECK(PT::popcount(PT::wave(i)) == PT::RegBits / 2);
-      for (int j = 0; (1 << j) < PT::RegBits; ++j) {
+    using ST = SimdTraits<s>;
+    CHECK(ST::popcount(ST::zero()) == 0);
+    CHECK(ST::popcount(ST::ones()) == ST::RegBits);
+    for (int i = 0; (1 << i) < ST::RegBits; ++i) {
+      CHECK(ST::popcount(ST::wave(i)) == ST::RegBits / 2);
+      for (int j = 0; (1 << j) < ST::RegBits; ++j) {
         if (i == j) {
           continue;
         }
-        CHECK(PT::popcount(PT::add(PT::wave(i), PT::wave(j))) ==
-              PT::RegBits / 2);
-        CHECK(PT::popcount(PT::mul(PT::wave(i), PT::wave(j))) ==
-              PT::RegBits / 4);
+        CHECK(ST::popcount(ST::add(ST::wave(i), ST::wave(j))) ==
+              ST::RegBits / 2);
+        CHECK(ST::popcount(ST::mul(ST::wave(i), ST::wave(j))) ==
+              ST::RegBits / 4);
       }
     }
   }
 };
 
-template <Simd p> struct TestRegWaveAsBitSlicedSequence {
+template <Simd s> struct TestRegWaveAsBitSlicedSequence {
   static void Run() {
-    using PT = SimdTraits<p>;
-    constexpr int numslices = 1 + __builtin_ctz(PT::RegBits);
-    uint8_t slices[PT::RegBytes * numslices];
+    using ST = SimdTraits<s>;
+    constexpr int numslices = 1 + __builtin_ctz(ST::RegBits);
+    uint8_t slices[ST::RegBytes * numslices];
     for (int i = 0; i < numslices; ++i) {
-      PT::store(slices + i * PT::RegBytes, PT::wave(i));
+      ST::store(slices + i * ST::RegBytes, ST::wave(i));
     }
-    for (int b = 0; b < PT::RegBits; ++b) {
+    for (int b = 0; b < ST::RegBits; ++b) {
       uint64_t sequence_value = 0;
       for (int i = 0; i < numslices; ++i) {
-        uint8_t slice_byte = slices[i * PT::RegBytes + b / 8];
+        uint8_t slice_byte = slices[i * ST::RegBytes + b / 8];
         uint8_t slice_bit = (slice_byte & (1 << (b % 8))) ? 1 : 0;
         sequence_value |= slice_bit << i;
       }

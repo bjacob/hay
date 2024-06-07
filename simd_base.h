@@ -1,3 +1,9 @@
+// Copyright 2024 The Hay Authors
+//
+// Licensed under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #ifndef HAY_SIMD_BASE_H_
 #define HAY_SIMD_BASE_H_
 
@@ -7,10 +13,10 @@ enum class Simd {
   Avx512,
 };
 
-template <Simd p> struct SimdDefinition {};
+template <Simd s> struct SimdDefinition {};
 
-template <Simd p> struct SimdTraits : SimdDefinition<p> {
-  using Base = SimdDefinition<p>;
+template <Simd s> struct SimdTraits : SimdDefinition<s> {
+  using Base = SimdDefinition<s>;
   using Reg = Base::Reg;
   static constexpr int RegBytes = sizeof(Reg);
   static constexpr int RegBits = 8 * RegBytes;

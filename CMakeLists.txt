@@ -1,4 +1,4 @@
-# Copyright 2023 Benoit Jacob (github.com/bjacob)
+# Copyright 2024 The Hay Authors (see AUTHORS).
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
@@ -23,9 +23,9 @@ cc_library(
     NAME
         "testlib"
     HDRS
-        "test.h"
+        "testlib.h"
     SRCS
-        "test.cc"
+        "testlib.cc"
 )
 
 cc_test(

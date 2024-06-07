@@ -1,5 +1,11 @@
-#ifndef HAY_TEST_H_
-#define HAY_TEST_H_
+// Copyright 2024 The Hay Authors
+//
+// Licensed under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#ifndef HAY_TESTLIB_H_
+#define HAY_TESTLIB_H_
 
 #include "simd.h"
 
@@ -13,20 +19,20 @@ void printTestLogLine(const char *header, const char *testname,
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
 
-template <Simd p>
+template <Simd s>
 static void printTestLogLine(const char *header, const char *testname) {
-  using PT = SimdTraits<p>;
-  printTestLogLine(header, testname, PT::name(), PT::RegBits);
+  using ST = SimdTraits<s>;
+  printTestLogLine(header, testname, ST::name(), ST::RegBits);
 }
 
-template <template <Simd> class TestClass, Simd p>
+template <template <Simd> class TestClass, Simd s>
 void TestOneSimd(const char *testname) {
-  printTestLogLine<p>("[ RUN     ]", testname);
-  if (SimdTraits<p>::detectCpu()) {
-    TestClass<p>::Run();
-    printTestLogLine<p>("[      OK ]", testname);
+  printTestLogLine<s>("[ RUN     ]", testname);
+  if (SimdTraits<s>::detectCpu()) {
+    TestClass<s>::Run();
+    printTestLogLine<s>("[      OK ]", testname);
   } else {
-    printTestLogLine<p>("[ SKIPPED ]", testname);
+    printTestLogLine<s>("[ SKIPPED ]", testname);
   }
 }
 
@@ -44,14 +50,14 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
 
-template <Simd p> SimdTraits<p>::Reg getRandomReg() {
-  using PT = SimdTraits<p>;
-  uint32_t buf[PT::RegBytes / sizeof(uint32_t)];
+template <Simd s> SimdTraits<s>::Reg getRandomReg() {
+  using ST = SimdTraits<s>;
+  uint32_t buf[ST::RegBytes / sizeof(uint32_t)];
   std::minstd_rand0 engine;
   for (uint32_t &val : buf) {
     val = engine();
   }
-  return PT::load(buf);
+  return ST::load(buf);
 }
 
-#endif // HAY_TEST_H_
+#endif // HAY_TESTLIB_H_
