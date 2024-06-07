@@ -85,7 +85,7 @@ template <Simd s> struct TestRegWaveAsBitSlicedSequence {
         uint8_t slice_bit = (slice_byte & (1 << (b % 8))) ? 1 : 0;
         sequence_value |= slice_bit << i;
       }
-      CHECK(sequence_value == b);
+      CHECK(sequence_value == static_cast<uint64_t>(b));
     }
   }
 };

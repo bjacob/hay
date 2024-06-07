@@ -4,8 +4,8 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_SIMD_ARM_NEON_H_
-#define HAY_SIMD_ARM_NEON_H_
+#ifndef HAY_SIMD_ARM_H_
+#define HAY_SIMD_ARM_H_
 
 #include "simd_base.h"
 
@@ -33,28 +33,28 @@ template <> struct SimdDefinition<Simd::Neon> {
     return std::popcount(vgetq_lane_u64(x, 0)) +
            std::popcount(vgetq_lane_u64(x, 1));
   }
-  static Reg zero() { return vdupq_n_u8(0); }
-  static Reg ones() { return vdupq_n_u8(0xFF); }
+  static Reg zero() { return vdupq_n_u64(0); }
+  static Reg ones() { return vdupq_n_u64(-1); }
   static Reg wave(int i) {
     switch (i) {
     case 0:
-      return vdupq_n_u8(0xAA);
+      return vreinterpretq_u64_u8(vdupq_n_u8(0xAA));
     case 1:
-      return vdupq_n_u8(0xCC);
+      return vreinterpretq_u64_u8(vdupq_n_u8(0xCC));
     case 2:
-      return vdupq_n_u8(0xF0);
+      return vreinterpretq_u64_u8(vdupq_n_u8(0xF0));
     case 3:
-      return vreinterpretq_u8_u16(vdupq_n_u16(0xFF00));
+      return vreinterpretq_u64_u16(vdupq_n_u16(0xFF00));
     case 4:
-      return vreinterpretq_u8_u32(vdupq_n_u32(0xFFFF0000u));
+      return vreinterpretq_u64_u32(vdupq_n_u32(0xFFFF0000u));
     case 5:
-      return vreinterpretq_u8_u64(vdupq_n_u64(0xFFFFFFFF00000000u));
+      return vdupq_n_u64(0xFFFFFFFF00000000u);
     case 6:
-      return vcombine_u8(vdup_n_u8(0), vdup_n_u8(0xFF));
+      return vcombine_u64(vdup_n_u64(0), vdup_n_u64(-1));
     default:
       return zero();
     }
   }
 };
 
-#endif // HAY_SIMD_ARM_NEON_H_
+#endif // HAY_SIMD_ARM_H_

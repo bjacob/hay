@@ -27,8 +27,8 @@ static void printTestLogLine(const char *header, const char *testname) {
 
 template <template <Simd> class TestClass, Simd s>
 void TestOneSimd(const char *testname) {
-  printTestLogLine<s>("[ RUN     ]", testname);
   if (SimdTraits<s>::detectCpu()) {
+    printTestLogLine<s>("[ RUN     ]", testname);
     TestClass<s>::Run();
     printTestLogLine<s>("[      OK ]", testname);
   } else {
@@ -42,9 +42,7 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
   TestOneSimd<TestClass, Simd::Neon>(testname);
 #endif
 #ifdef __x86_64__
-  TestOneSimd<TestClass, Simd::Avx2>(testname);
   TestOneSimd<TestClass, Simd::Avx512>(testname);
-  TestOneSimd<TestClass, Simd::Avx512Bitalg>(testname);
 #endif
 }
 

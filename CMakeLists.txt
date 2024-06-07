@@ -11,6 +11,24 @@ enable_testing()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(cmake/bazel_like_rules.cmake)
+include(cmake/platform.cmake)
+
+set(HAY_TARGET_CPU "native" CACHE STRING "Target CPU")
+message(STATUS "Target CPU: ${HAY_TARGET_CPU}")
+
+if (HAY_ARCH STREQUAL "x86_64")
+  set(HAY_TARGET_CPU_FLAG "-march=${HAY_TARGET_CPU}")
+else()
+  set(HAY_TARGET_CPU_FLAG "-mcpu=${HAY_TARGET_CPU}")
+endif()
+
+add_compile_options(
+    "${HAY_TARGET_CPU_FLAG}"
+    "-Wall"
+    "-Wextra"
+    "-Werror"
+    "-fno-lax-vector-conversions"
+)
 
 cc_library(
     NAME
