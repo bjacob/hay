@@ -48,10 +48,9 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
 
-template <Simd s> SimdTraits<s>::Reg getRandomReg() {
+template <Simd s> SimdTraits<s>::Reg getRandomReg(std::minstd_rand0 &engine) {
   using ST = SimdTraits<s>;
   uint32_t buf[ST::RegBytes / sizeof(uint32_t)];
-  std::minstd_rand0 engine;
   for (uint32_t &val : buf) {
     val = engine();
   }

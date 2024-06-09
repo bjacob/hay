@@ -7,6 +7,8 @@
 #include "hay.h"
 #include "testlib.h"
 
+#include <cstring>
+
 template <Simd s> struct TestRegLoadStore {
   static void Run() {
     using ST = SimdTraits<s>;
@@ -31,9 +33,10 @@ template <Simd s> struct TestRegArithmetic {
     CHECK(ST::equal(ST::ones(), ST::ones()));
     CHECK(!ST::equal(ST::zero(), ST::ones()));
     using Reg = ST::Reg;
-    Reg x = getRandomReg<s>();
-    Reg y = getRandomReg<s>();
-    Reg z = getRandomReg<s>();
+    std::minstd_rand0 engine;
+    Reg x = getRandomReg<s>(engine);
+    Reg y = getRandomReg<s>(engine);
+    Reg z = getRandomReg<s>(engine);
     CHECK(ST::equal(x, x));
     CHECK(!ST::equal(ST::add(x, ST::ones()), x));
     CHECK(ST::equal(ST::add(x, x), ST::zero()));
@@ -45,7 +48,7 @@ template <Simd s> struct TestRegArithmetic {
     CHECK(ST::equal(ST::mul(x, y), ST::mul(y, x)));
     CHECK(ST::equal(ST::mul(ST::mul(x, y), z), ST::mul(x, ST::mul(y, z))));
     CHECK(ST::equal(ST::mul(x, ST::add(y, z)),
-                    ST::add(ST::mul(x, z), ST::mul(y, z))));
+                    ST::add(ST::mul(x, y), ST::mul(x, z))));
     CHECK(ST::equal(ST::madd(x, y, z), ST::add(x, ST::mul(y, z))));
   }
 };

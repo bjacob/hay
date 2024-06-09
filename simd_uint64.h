@@ -18,7 +18,7 @@ template <> struct SimdDefinition<Simd::Uint64> {
   static bool detectCpu() { return true; }
   static Reg add(Reg x, Reg y) { return x ^ y; }
   static Reg mul(Reg x, Reg y) { return x & y; }
-  static Reg madd(Reg x, Reg y, Reg z) { return add(mul(x, y), z); }
+  static Reg madd(Reg x, Reg y, Reg z) { return add(x, mul(y, z)); }
   static Reg load(const void *from) { return *static_cast<const Reg *>(from); }
   static void store(void *to, Reg x) { *static_cast<Reg *>(to) = x; }
   static bool equal(Reg x, Reg y) { return x == y; }
