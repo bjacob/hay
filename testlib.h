@@ -15,24 +15,19 @@
 
 void check_impl(bool cond, const char *condstr, const char *file, int line);
 void printTestLogLine(const char *header, const char *testname,
-                      const char *simdname, int regbits);
+                      const char *simdname);
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
 
-template <Simd s>
-static void printTestLogLine(const char *header, const char *testname) {
-  using ST = SimdTraits<s>;
-  printTestLogLine(header, testname, ST::name(), ST::RegBits);
-}
-
 template <template <Simd> class TestClass, Simd s>
 void TestOneSimd(const char *testname) {
+  using ST = SimdTraits<s>;
   if (SimdTraits<s>::detectCpu()) {
-    printTestLogLine<s>("[ RUN     ]", testname);
+    printTestLogLine("[ RUN     ]", testname, ST::name());
     TestClass<s>::Run();
-    printTestLogLine<s>("[      OK ]", testname);
+    printTestLogLine("[      OK ]", testname, ST::name());
   } else {
-    printTestLogLine<s>("[ SKIPPED ]", testname);
+    printTestLogLine("[ SKIPPED ]", testname, ST::name());
   }
 }
 
