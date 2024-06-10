@@ -10,14 +10,17 @@
 #include <emmintrin.h>
 #include <immintrin.h>
 
+#include "cpuinfo.h"
 #include "simd_base.h"
 
-#if defined(__AVX512VPOPCNTDQ__)
+#ifndef __AVX512VPOPCNTDQ__
+#error Must be compiled with the AVX-512-VPOPCNTDQ CPU feature enabled.
+#endif
 
 template <> struct SimdDefinition<Simd::Avx512> {
   using Reg = __m512i;
   static const char *name() { return "AVX-512"; }
-  static bool detectCpu() { return true; }
+  static bool detectCpu() { return getCpuInfo() & CPUINFO_AVX512VPOPCNTDQ; }
   static Reg add(Reg x, Reg y) { return _mm512_xor_si512(x, y); }
   static Reg mul(Reg x, Reg y) { return _mm512_and_si512(x, y); }
   static Reg madd(Reg x, Reg y, Reg z) {
@@ -60,7 +63,5 @@ template <> struct SimdDefinition<Simd::Avx512> {
     }
   }
 };
-
-#endif // defined(__AVX512VPOPCNTDQ__)
 
 #endif // HAY_SIMD_X86_H_

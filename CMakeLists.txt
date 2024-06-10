@@ -32,9 +32,34 @@ add_compile_options(
 
 cc_library(
     NAME
+        "cpuinfo"
+    HDRS
+        "cpuinfo.h"
+    SRCS
+        "cpuinfo.cc"
+)
+
+cc_library(
+    NAME
+        "simd"
+    HDRS
+        "simd.h"
+    SRCS
+        "simd_arm.h"
+        "simd_base.h"
+        "simd_uint64.h"
+        "simd_x86.h"
+    DEPS
+        "cpuinfo"
+)
+
+cc_library(
+    NAME
         "hay"
     HDRS
         "hay.h"
+    DEPS
+        "simd"
 )
 
 cc_library(
@@ -44,6 +69,8 @@ cc_library(
         "testlib.h"
     SRCS
         "testlib.cc"
+    DEPS
+        "simd"
 )
 
 cc_test(
@@ -52,6 +79,6 @@ cc_test(
     SRCS
         "simd_test.cc"
     DEPS
-        "hay"
+        "simd"
         "testlib"
 )
