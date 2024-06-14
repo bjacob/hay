@@ -7,19 +7,30 @@
 #ifndef HAY_SIMD_BASE_H_
 #define HAY_SIMD_BASE_H_
 
+#include <cstdint>
+
 enum class Simd {
   Uint64,
   Neon,
   Avx512,
 };
 
-template <Simd s> struct SimdDefinition {};
-
-template <Simd s> struct SimdTraits : SimdDefinition<s> {
-  using Base = SimdDefinition<s>;
-  using Reg = Base::Reg;
-  static constexpr int RegBytes = sizeof(Reg);
-  static constexpr int RegBits = 8 * RegBytes;
+struct Uint1 {
+  static constexpr int elem_bits = 1;
+  static constexpr int elem_count = 1;
+  uint8_t val : 1;
 };
+
+struct Int64 {
+  static constexpr int elem_bits = 64;
+  static constexpr int elem_count = 1;
+  int64_t val;
+};
+
+template <Simd s> struct Uint1xN {};
+template <Simd s> struct Int64xN {};
+
+template <Simd s> const char *name();
+template <Simd s> bool detect();
 
 #endif // HAY_SIMD_BASE_H_

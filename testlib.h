@@ -21,13 +21,12 @@ void printTestLogLine(const char *header, const char *testname,
 
 template <template <Simd> class TestClass, Simd s>
 void TestOneSimd(const char *testname) {
-  using ST = SimdTraits<s>;
-  if (SimdTraits<s>::detectCpu()) {
-    printTestLogLine("[ RUN     ]", testname, ST::name());
+  if (detect<s>()) {
+    printTestLogLine("[ RUN     ]", testname, name<s>());
     TestClass<s>::Run();
-    printTestLogLine("[      OK ]", testname, ST::name());
+    printTestLogLine("[      OK ]", testname, name<s>());
   } else {
-    printTestLogLine("[ SKIPPED ]", testname, ST::name());
+    printTestLogLine("[ SKIPPED ]", testname, name<s>());
   }
 }
 
@@ -43,13 +42,20 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
 
-template <Simd s> SimdTraits<s>::Reg getRandomReg(std::minstd_rand0 &engine) {
-  using ST = SimdTraits<s>;
-  uint32_t buf[ST::RegBytes / sizeof(uint32_t)];
+template <Simd s> Uint1xN<s> getRandomUint1xN(std::minstd_rand0 &engine) {
+  uint32_t buf[sizeof(Uint1xN<s>) / sizeof(uint32_t)];
   for (uint32_t &val : buf) {
     val = engine();
   }
-  return ST::load(buf);
+  return Uint1xN<s>::load(buf);
+}
+
+template <Simd s> Int64xN<s> getRandomInt64xN(std::minstd_rand0 &engine) {
+  int64_t buf[Int64xN<s>::elem_count];
+  for (int64_t &val : buf) {
+    val = engine() - engine.max() / 2;
+  }
+  return Uint1xN<s>::load(buf);
 }
 
 #endif // HAY_TESTLIB_H_

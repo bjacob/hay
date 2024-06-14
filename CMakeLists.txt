@@ -24,61 +24,77 @@ endif()
 
 add_compile_options(
     "${HAY_TARGET_CPU_FLAG}"
-    "-Wall"
-    "-Wextra"
-    "-Werror"
-    "-fno-lax-vector-conversions"
+    -fno-exceptions
+    -fno-rtti
+    -Wall
+    -Wextra
+    -Werror
+    -fno-lax-vector-conversions
 )
 
 cc_library(
     NAME
-        "cpuinfo"
+        cpuinfo
     HDRS
-        "cpuinfo.h"
+        cpuinfo.h
     SRCS
-        "cpuinfo.cc"
+        cpuinfo.cc
 )
 
 cc_library(
     NAME
-        "simd"
+        simd_base
     HDRS
-        "simd.h"
+        simd_base.h
+)
+
+cc_library(
+    NAME
+        simd
+    HDRS
+        simd.h
     SRCS
-        "simd_arm.h"
-        "simd_base.h"
-        "simd_uint64.h"
-        "simd_x86.h"
+        simd_arm.h
+        simd_uint64.h
+        simd_x86.h
     DEPS
-        "cpuinfo"
+        cpuinfo
+        simd_base
 )
 
 cc_library(
     NAME
-        "hay"
+        hay
     HDRS
-        "hay.h"
+        hay.h
     DEPS
-        "simd"
+        simd
 )
 
 cc_library(
     NAME
-        "testlib"
+        testlib
     HDRS
-        "testlib.h"
+        testlib.h
     SRCS
-        "testlib.cc"
+        testlib.cc
     DEPS
-        "simd"
+        simd
 )
 
 cc_test(
     NAME
-        "simd_test"
+        simd_test
     SRCS
-        "simd_test.cc"
+        simd_test.cc
     DEPS
-        "simd"
-        "testlib"
+        simd
+        testlib
+)
+
+cc_library(
+    NAME
+        vector
+    DEPS
+        simd_base
 )

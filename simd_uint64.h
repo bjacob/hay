@@ -9,38 +9,75 @@
 
 #include "simd_base.h"
 
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 
-template <> struct SimdDefinition<Simd::Uint64> {
-  using Reg = uint64_t;
-  static const char *name() { return "Uint64"; }
-  static bool detectCpu() { return true; }
-  static Reg add(Reg x, Reg y) { return x ^ y; }
-  static Reg mul(Reg x, Reg y) { return x & y; }
-  static Reg madd(Reg x, Reg y, Reg z) { return add(x, mul(y, z)); }
-  static Reg load(const void *from) { return *static_cast<const Reg *>(from); }
-  static void store(void *to, Reg x) { *static_cast<Reg *>(to) = x; }
-  static bool equal(Reg x, Reg y) { return x == y; }
-  static int popcount(Reg x) { return std::popcount(x); }
-  static Reg zero() { return 0; }
-  static Reg ones() { return -1; }
-  static Reg wave(int i) {
+template <> inline const char *name<Simd::Uint64>() { return "Uint64"; }
+
+template <> inline bool detect<Simd::Uint64>() { return true; }
+
+template <> struct Int64xN<Simd::Uint64> {
+  static constexpr int elem_bits = 64;
+  static constexpr int elem_count = 1;
+  int64_t val;
+  friend Int64xN add(Int64xN x, Int64xN y) { return {x.val + y.val}; }
+  friend Int64xN sub(Int64xN x, Int64xN y) { return {x.val - y.val}; }
+  friend Int64xN min(Int64xN x, Int64xN y) { return {std::min(x.val, y.val)}; }
+  friend Int64xN max(Int64xN x, Int64xN y) { return {std::max(x.val, y.val)}; }
+  friend Int64 reduce_add(Int64xN x) { return {x.val}; }
+  static Int64xN load(const void *from) {
+    return {*static_cast<const int64_t *>(from)};
+  }
+  friend void store(void *to, Int64xN x) {
+    *static_cast<int64_t *>(to) = x.val;
+  }
+  friend bool operator==(Int64xN x, Int64xN y) { return x.val == y.val; }
+  static Int64xN zero() { return {0}; }
+  static Int64xN cst(int64_t c) { return {c}; }
+  static Int64xN wave() { return {0}; }
+};
+
+template <> struct Uint1xN<Simd::Uint64> {
+  static constexpr int elem_bits = 1;
+  static constexpr int elem_count = 64;
+  uint64_t val;
+  friend Uint1xN add(Uint1xN x, Uint1xN y) { return {x.val ^ y.val}; }
+  friend Uint1xN mul(Uint1xN x, Uint1xN y) { return {x.val & y.val}; }
+  friend Uint1xN madd(Uint1xN x, Uint1xN y, Uint1xN z) {
+    return {x.val ^ (y.val & z.val)};
+  }
+  static Uint1xN load(const void *from) {
+    return {*static_cast<const uint64_t *>(from)};
+  }
+  friend void store(void *to, Uint1xN x) {
+    *static_cast<uint64_t *>(to) = x.val;
+  }
+  friend bool operator==(Uint1xN x, Uint1xN y) { return x.val == y.val; }
+  friend Int64xN<Simd::Uint64> popcount64(Uint1xN x) {
+    return {std::popcount(x.val)};
+  }
+  friend Int64xN<Simd::Uint64> lzcount64(Uint1xN x) {
+    return {std::countl_zero(x.val)};
+  }
+  static Uint1xN zero() { return {0}; }
+  static Uint1xN ones() { return {0xFFFFFFFFFFFFFFFFu}; }
+  static Uint1xN wave(int i) {
     switch (i) {
     case 0:
-      return 0xAAAAAAAAAAAAAAAAu;
+      return {0xAAAAAAAAAAAAAAAAu};
     case 1:
-      return 0xCCCCCCCCCCCCCCCCu;
+      return {0xCCCCCCCCCCCCCCCCu};
     case 2:
-      return 0xF0F0F0F0F0F0F0F0u;
+      return {0xF0F0F0F0F0F0F0F0u};
     case 3:
-      return 0xFF00FF00FF00FF00u;
+      return {0xFF00FF00FF00FF00u};
     case 4:
-      return 0xFFFF0000FFFF0000u;
+      return {0xFFFF0000FFFF0000u};
     case 5:
-      return 0xFFFFFFFF00000000u;
+      return {0xFFFFFFFF00000000u};
     default:
-      return 0;
+      return zero();
     }
   }
 };
