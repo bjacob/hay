@@ -124,4 +124,19 @@ template <> struct Uint1xN<Simd::Avx512> {
   }
 };
 
+template <> struct std::formatter<Uint1xN<Simd::Uint64>> {
+  auto format(const Uint1xN<Simd::Uint64> &x, std::format_context &ctx) const {
+
+    return std::format_to(ctx.out(), "{}", x.val);
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
+
+template <> struct std::formatter<Int64xN<Simd::Uint64>> {
+  auto format(const Int64xN<Simd::Uint64> &x, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "{}", x.val);
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
+
 #endif // HAY_SIMD_X86_H_
