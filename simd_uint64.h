@@ -11,7 +11,8 @@
 
 #include <algorithm>
 #include <bit>
-#include <cstdint>
+#include <cassert>
+#include <stdint.h>
 
 template <> inline const char *name<Simd::Uint64>() { return "Uint64"; }
 
@@ -36,6 +37,10 @@ template <> struct Int64xN<Simd::Uint64> {
   static Int64xN zero() { return {0}; }
   static Int64xN cst(int64_t c) { return {c}; }
   static Int64xN wave() { return {0}; }
+  friend Int64 extract(Int64xN x, int i) {
+    assert(i == 0);
+    return {x.val};
+  }
 };
 
 template <> struct Uint1xN<Simd::Uint64> {
@@ -80,6 +85,24 @@ template <> struct Uint1xN<Simd::Uint64> {
       return zero();
     }
   }
+  friend Uint1 extract(Uint1xN x, int i) {
+    assert(i < elem_count);
+    return {static_cast<uint8_t>((x.val >> i) & 1)};
+  }
+};
+
+template <> struct std::formatter<Uint1xN<Simd::Uint64>> {
+  auto format(const Uint1xN<Simd::Uint64> &x, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "{}", x.val);
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
+
+template <> struct std::formatter<Int64xN<Simd::Uint64>> {
+  auto format(const Int64xN<Simd::Uint64> &x, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "{}", x.val);
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 #endif // HAY_SIMD_UINT64_H_

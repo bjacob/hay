@@ -9,7 +9,8 @@
 
 #include <cstdint>
 
-const uint64_t CPUINFO_AVX512VPOPCNTDQ = 0x1;
+const uint64_t CPUINFO_AVX512VBMI2 = 0x1;
+const uint64_t CPUINFO_AVX512VPOPCNTDQ = 0x2;
 
 uint64_t getCpuInfo();
 

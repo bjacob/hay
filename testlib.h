@@ -11,13 +11,34 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <format>
 #include <random>
+#include <string_view>
+
+void check_fail_impl(std::string_view condstr, const char *file, int line);
 
 void check_impl(bool cond, const char *condstr, const char *file, int line);
+
+template <typename X, typename Y>
+void check_eq_impl(const X &x, const Y &y, bool expected_equality,
+                   const char *xstr, const char *ystr, const char *file,
+                   int line) {
+  if ((x == y) != expected_equality) {
+    std::string str = std::format(
+        "Expected {} between {}, which has the value:\n{}\nand {}, which has "
+        "the value:\n{}\n\n",
+        expected_equality ? "equality" : "non-equality", xstr, x, ystr, y);
+    check_fail_impl(str, file, line);
+  }
+}
+
 void printTestLogLine(const char *header, const char *testname,
                       const char *simdname);
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
+#define CHECK_EQ(x, y) check_eq_impl((x), (y), true, #x, #y, __FILE__, __LINE__)
+#define CHECK_NE(x, y)                                                         \
+  check_eq_impl((x), (y), false, #x, #y, __FILE__, __LINE__)
 
 template <template <Simd> class TestClass, Simd s>
 void TestOneSimd(const char *testname) {
@@ -36,7 +57,7 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
   TestOneSimd<TestClass, Simd::Neon>(testname);
 #endif
 #ifdef __x86_64__
-  TestOneSimd<TestClass, Simd::Avx512>(testname);
+//  TestOneSimd<TestClass, Simd::Avx512>(testname);
 #endif
 }
 

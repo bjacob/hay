@@ -5,9 +5,30 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "simd.h"
+#include "simd_base.h"
+#include "simd_x86.h"
 #include "testlib.h"
 
 #include <cstring>
+
+template <Simd s> struct TestInt64xNLoadStore {
+  static void Run() {
+    const int buf_elems = 2 * Int64xN<s>::elem_count;
+    int64_t buf[buf_elems];
+    for (int i = 0; i < buf_elems; ++i) {
+      buf[i] = i;
+    }
+    Int64xN<s> x = Int64xN<s>::load(buf);
+    Int64xN<s> y = Int64xN<s>::load(buf + Int64xN<s>::elem_count);
+    CHECK_NE(x, y);
+    for (int b = 0; b < Int64xN<s>::elem_count; ++b) {
+      CHECK(extract(x, b).val == b);
+    }
+    store(buf, y);
+    CHECK_EQ(y, Int64xN<s>::load(buf));
+    CHECK(!memcmp(buf, buf + Int64xN<s>::elem_count, sizeof(Int64xN<s>)));
+  }
+};
 
 template <Simd s> struct TestUint1xNLoadStore {
   static void Run() {
@@ -19,6 +40,9 @@ template <Simd s> struct TestUint1xNLoadStore {
     Uint1xN<s> x = Uint1xN<s>::load(buf);
     Uint1xN<s> y = Uint1xN<s>::load(buf + sizeof(Uint1xN<s>));
     CHECK(!(x == y));
+    for (int b = 0; b < Uint1xN<s>::elem_count; ++b) {
+      CHECK(extract(x, b).val == ((buf[b / 8] >> (b % 8)) & 1));
+    }
     store(buf, y);
     CHECK(y == Uint1xN<s>::load(buf));
     CHECK(!memcmp(buf, buf + sizeof(Uint1xN<s>), sizeof(Uint1xN<s>)));
@@ -49,12 +73,22 @@ template <Simd s> struct TestUint1xNArithmetic {
   }
 };
 
-template <Simd s> struct TestUint1xNWaveAndPopcount {
+template <Simd s> struct TestUint1xNBitcounts {
   static void Run() {
-    const int bits = Uint1xN<s>::elem_bits * Uint1xN<s>::elem_count;
+    const int bits = Uint1xN<s>::elem_count;
     CHECK(bits == 8 * sizeof(Uint1xN<s>));
+    CHECK(reduce_add(lzcount64(Uint1xN<s>::zero())).val == bits);
     CHECK(reduce_add(popcount64(Uint1xN<s>::zero())).val == 0);
+    CHECK(reduce_add(lzcount64(Uint1xN<s>::ones())).val == 0);
     CHECK(reduce_add(popcount64(Uint1xN<s>::ones())).val == bits);
+    for (int i = 0; (1 << i) < bits; ++i) {
+      uint8_t buf[sizeof(Uint1xN<s>)] = {0};
+      buf[i / 8] = 1u << (i % 8);
+      Uint1xN<s> x = Uint1xN<s>::load(buf);
+      CHECK(extract(x, i).val == 1);
+      CHECK(reduce_add(popcount64(x)).val == 1);
+      CHECK(extract(lzcount64(x), i / 64).val == 63 - (i % 64));
+    }
     for (int i = 0; (1 << i) < bits; ++i) {
       CHECK(reduce_add(popcount64(Uint1xN<s>::wave(i))).val == bits / 2);
       for (int j = 0; (1 << j) < bits; ++j) {
@@ -72,10 +106,10 @@ template <Simd s> struct TestUint1xNWaveAndPopcount {
   }
 };
 
-template <Simd s> struct TestUint1xNWaveAsBitSlicedSequence {
+template <Simd s> struct TestUint1xNWave {
   static void Run() {
     const int bytes = sizeof(Uint1xN<s>);
-    const int bits = Uint1xN<s>::elem_bits * Uint1xN<s>::elem_count;
+    const int bits = Uint1xN<s>::elem_count;
     CHECK(bits == 8 * bytes);
     constexpr int numslices = 1 + __builtin_ctz(bits);
     uint8_t slices[bytes * numslices];
@@ -95,8 +129,9 @@ template <Simd s> struct TestUint1xNWaveAsBitSlicedSequence {
 };
 
 int main() {
+  TEST(TestInt64xNLoadStore);
   TEST(TestUint1xNLoadStore);
   TEST(TestUint1xNArithmetic);
-  TEST(TestUint1xNWaveAndPopcount);
-  TEST(TestUint1xNWaveAsBitSlicedSequence);
+  TEST(TestUint1xNBitcounts);
+  TEST(TestUint1xNWave);
 }

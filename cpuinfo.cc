@@ -73,6 +73,9 @@ uint64_t getCpuInfo() {
   hay_cpuid_bounds_t bounds = hay_cpuid_query_bounds();
   hay_cpuid_regs_t leaf7_0 = hay_cpuid_or_zero(7, 0, bounds);
   uint64_t out = 0;
+  if (leaf7_0.ecx & (1 << 6)) {
+    out |= CPUINFO_AVX512VBMI2;
+  }
   if (leaf7_0.ecx & (1 << 14)) {
     out |= CPUINFO_AVX512VPOPCNTDQ;
   }

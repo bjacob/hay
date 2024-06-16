@@ -9,7 +9,6 @@ project(hay CXX)
 set(CMAKE_CXX_STANDARD 20)
 enable_testing()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 include(cmake/bazel_like_rules.cmake)
 include(cmake/platform.cmake)
 
@@ -22,8 +21,21 @@ else()
   set(HAY_TARGET_CPU_FLAG "-mcpu=${HAY_TARGET_CPU}")
 endif()
 
+if (HAY_ARCH STREQUAL "x86_64")
+  set(HAY_CPU_SPECIFIC_DEFAULT_FLAGS
+    -mavx512f
+    -mavx512cd
+    -mavx512bw
+    -mavx512dq
+    -mavx512vl
+    -mavx512vbmi2
+    -mavx512vpopcntdq
+  )
+endif()
+
 add_compile_options(
     "${HAY_TARGET_CPU_FLAG}"
+    "${HAY_CPU_SPECIFIC_DEFAULT_FLAGS}"
     -fno-exceptions
     -fno-rtti
     -Wall

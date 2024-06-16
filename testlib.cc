@@ -6,10 +6,15 @@
 
 #include "testlib.h"
 
+void check_fail_impl(std::string_view condstr, const char *file, int line) {
+  fprintf(stderr, "[  FAILED ]  At %s:%d:\n%.*s\n", file, line,
+          static_cast<int>(condstr.size()), condstr.data());
+  abort();
+}
+
 void check_impl(bool cond, const char *condstr, const char *file, int line) {
   if (!cond) {
-    fprintf(stderr, "[  FAILED ]  CHECK(%s) at %s:%d\n", condstr, file, line);
-    abort();
+    check_fail_impl(condstr, file, line);
   }
 }
 
