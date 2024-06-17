@@ -58,7 +58,7 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
   TestOneSimd<TestClass, Simd::Neon>(testname);
 #endif
 #ifdef __x86_64__
-//  TestOneSimd<TestClass, Simd::Avx512>(testname);
+  TestOneSimd<TestClass, Simd::Avx512>(testname);
 #endif
 }
 
