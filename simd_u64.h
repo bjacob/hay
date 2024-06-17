@@ -4,8 +4,8 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_SIMD_UINT64_H_
-#define HAY_SIMD_UINT64_H_
+#ifndef HAY_SIMD_U64_H_
+#define HAY_SIMD_U64_H_
 
 #include "simd_base.h"
 
@@ -14,11 +14,11 @@
 #include <cassert>
 #include <stdint.h>
 
-template <> inline const char *name<Simd::Uint64>() { return "Uint64"; }
+template <> inline const char *name<Simd::U64>() { return "U64"; }
 
-template <> inline bool detect<Simd::Uint64>() { return true; }
+template <> inline bool detect<Simd::U64>() { return true; }
 
-template <> struct Int64xN<Simd::Uint64> {
+template <> struct Int64xN<Simd::U64> {
   static constexpr int elem_bits = 64;
   static constexpr int elem_count = 1;
   int64_t val;
@@ -43,7 +43,7 @@ template <> struct Int64xN<Simd::Uint64> {
   }
 };
 
-template <> struct Uint1xN<Simd::Uint64> {
+template <> struct Uint1xN<Simd::U64> {
   static constexpr int elem_bits = 1;
   static constexpr int elem_count = 64;
   uint64_t val;
@@ -59,10 +59,10 @@ template <> struct Uint1xN<Simd::Uint64> {
     *static_cast<uint64_t *>(to) = x.val;
   }
   friend bool operator==(Uint1xN x, Uint1xN y) { return x.val == y.val; }
-  friend Int64xN<Simd::Uint64> popcount64(Uint1xN x) {
+  friend Int64xN<Simd::U64> popcount64(Uint1xN x) {
     return {std::popcount(x.val)};
   }
-  friend Int64xN<Simd::Uint64> lzcount64(Uint1xN x) {
+  friend Int64xN<Simd::U64> lzcount64(Uint1xN x) {
     return {std::countl_zero(x.val)};
   }
   static Uint1xN zero() { return {0}; }
@@ -91,18 +91,4 @@ template <> struct Uint1xN<Simd::Uint64> {
   }
 };
 
-template <> struct std::formatter<Uint1xN<Simd::Uint64>> {
-  auto format(const Uint1xN<Simd::Uint64> &x, std::format_context &ctx) const {
-    return std::format_to(ctx.out(), "{}", x.val);
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-};
-
-template <> struct std::formatter<Int64xN<Simd::Uint64>> {
-  auto format(const Int64xN<Simd::Uint64> &x, std::format_context &ctx) const {
-    return std::format_to(ctx.out(), "{}", x.val);
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-};
-
-#endif // HAY_SIMD_UINT64_H_
+#endif // HAY_SIMD_U64_H_

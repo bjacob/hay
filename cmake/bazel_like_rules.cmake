@@ -19,7 +19,10 @@ function(cc_library)
 
   file(RELATIVE_PATH _SUBDIR ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_LIST_DIR})
 
-  if("${_RULE_SRCS}" STREQUAL "")
+  set(_NON_HEADER_SRCS "${_RULE_SRCS}")
+  list(FILTER _NON_HEADER_SRCS EXCLUDE REGEX "\\.h$")
+
+  if("${_NON_HEADER_SRCS}" STREQUAL "")
     # Generating a header-only library.
     add_library(${_NAME} INTERFACE)
     set_target_properties(${_NAME} PROPERTIES PUBLIC_HEADER "${_RULE_HDRS}")
@@ -31,10 +34,6 @@ function(cc_library)
     target_link_libraries(${_NAME}
       INTERFACE
         ${_RULE_DEPS}
-    )
-    target_compile_definitions(${_NAME}
-      INTERFACE
-        ${_RULE_DEFINES}
     )
   else()
     # Generating a static binary library.
@@ -48,12 +47,7 @@ function(cc_library)
       PUBLIC
         ${_RULE_DEPS}
     )
-    target_compile_definitions(${_NAME}
-      PUBLIC
-        ${_RULE_DEFINES}
-    )
   endif()
-
   add_library(${PROJECT_NAME}::${_NAME} ALIAS ${_NAME})
 endfunction()
 

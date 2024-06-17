@@ -67,7 +67,7 @@ cc_library(
         simd.h
     SRCS
         simd_arm.h
-        simd_uint64.h
+        simd_u64.h
         simd_x86.h
     DEPS
         cpuinfo

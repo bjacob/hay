@@ -25,9 +25,10 @@ void check_eq_impl(const X &x, const Y &y, bool expected_equality,
                    int line) {
   if ((x == y) != expected_equality) {
     std::string str = std::format(
-        "Expected {} between {}, which has the value:\n{}\nand {}, which has "
+        "Expected {} between {} , which has the value:\n{}\n\nand {}, which "
+        "has "
         "the value:\n{}\n\n",
-        expected_equality ? "equality" : "non-equality", xstr, x, ystr, y);
+        (expected_equality ? "equality" : "non-equality"), xstr, x, ystr, y);
     check_fail_impl(str, file, line);
   }
 }
@@ -52,7 +53,7 @@ void TestOneSimd(const char *testname) {
 }
 
 template <template <Simd> class TestClass> void Test(const char *testname) {
-  TestOneSimd<TestClass, Simd::Uint64>(testname);
+  TestOneSimd<TestClass, Simd::U64>(testname);
 #ifdef __aarch64__
   TestOneSimd<TestClass, Simd::Neon>(testname);
 #endif
@@ -76,7 +77,7 @@ template <Simd s> Int64xN<s> getRandomInt64xN(std::minstd_rand0 &engine) {
   for (int64_t &val : buf) {
     val = engine() - engine.max() / 2;
   }
-  return Uint1xN<s>::load(buf);
+  return Int64xN<s>::load(buf);
 }
 
 #endif // HAY_TESTLIB_H_

@@ -8,10 +8,9 @@
 #define HAY_SIMD_BASE_H_
 
 #include <cstdint>
-#include <format>
 
 enum class Simd {
-  Uint64,
+  U64,
   Neon,
   Avx512,
 };
@@ -26,20 +25,6 @@ struct Int64 {
   static constexpr int elem_bits = 64;
   static constexpr int elem_count = 1;
   int64_t val;
-};
-
-template <> struct std::formatter<Uint1> {
-  auto format(const Uint1 &x, std::format_context &ctx) const {
-    return std::format_to(ctx.out(), "{}", x.val);
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-};
-
-template <> struct std::formatter<Int64> {
-  auto format(const Uint1 &x, std::format_context &ctx) const {
-    return std::format_to(ctx.out(), "{}", x.val);
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 template <Simd s> struct Uint1xN {};
