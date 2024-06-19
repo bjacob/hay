@@ -4,18 +4,29 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_Vector_H_
-#define HAY_Vector_H_
+#ifndef HAY_VECTOR_H_
+#define HAY_VECTOR_H_
 
-#include "simd_base.h"
 #include <array>
+#include <cstdint>
+#include <format>
 
-template <Simd simd, int... sizesPack> class Vector {
+template <typename EType, int... sizesPack> class Vector;
+
+template <typename EType, int... sizes> struct SliceType {};
+template <typename EType, int size0, int... sizes>
+struct SliceType<EType, size0, sizes...> {
+  using Type = Vector<EType, sizes...>;
+};
+
+template <typename EType> struct SliceType<EType> {
+  using Type = Vector<EType>;
+};
+
+template <typename EType, int... sizesPack> class Vector {
 public:
-  using ST = SimdTraits<simd>;
-  using Reg = ST::Reg;
   static constexpr int order = sizeof...(sizesPack);
-  static constexpr int flatSize = (sizesPack * ...);
+  static constexpr int flatSize = (sizesPack * ... * 1);
   using Indices = std::array<int, order>;
   static Indices getSizes() { return Indices(sizesPack...); }
 
@@ -39,31 +50,107 @@ public:
     return result;
   }
 
-private:
-  Reg regs[flatSize];
+  static Vector load(const void *from) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] =
+          EType::load(static_cast<const uint8_t *>(from) + i * sizeof(EType));
+    }
+    return result;
+  }
+
+  friend void store(void *to, Vector x) {
+    for (int i = 0; i < flatSize; ++i) {
+      store(static_cast<uint8_t *>(to) + i * sizeof(EType), x.elems[i]);
+    }
+  }
+
+  friend Vector add(Vector x, Vector y) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = add(x.elems[i], y.elems[i]);
+    }
+    return result;
+  }
+
+  friend Vector mul(Vector x, Vector y) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = mul(x.elems[i], y.elems[i]);
+    }
+    return result;
+  }
+
+  friend bool operator==(Vector x, Vector y) {
+    for (int i = 0; i < flatSize; ++i) {
+      if (!(x.elems[i] == y.elems[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  friend SliceType<EType, sizesPack...>::Type slice(Vector x, int i) {
+    typename SliceType<EType, sizesPack...>::Type result;
+    for (int j = 0; j < result.flatSize; ++j) {
+      result.elems[j] = x.elems[j + i * result.flatSize];
+    }
+    return result;
+  }
+
+  EType elems[flatSize];
 };
 
-template <Simd simd, int... sizes>
-Vector<simd, sizes...> add(Vector<simd, sizes...> x, Vector<simd, sizes...> y) {
-  using V = Vector<simd, sizes...>;
-  using ST = SimdTraits<simd>;
-  V result;
-  for (int i = 0; i < V::flatSize; ++i) {
-    result.regs[i] = ST::add(x.regs[i], y.regs[i]);
-  }
-  return result;
-}
+template <typename EType, int... sizes>
+struct std::formatter<Vector<EType, sizes...>> {};
 
-template <Simd simd, int... sizes>
-Vector<simd, sizes...> elem_mul(Vector<simd, sizes...> x,
-                                Vector<simd, sizes...> y) {
-  using V = Vector<simd, sizes...>;
-  using ST = SimdTraits<simd>;
-  V result;
-  for (int i = 0; i < V::flatSize; ++i) {
-    result.regs[i] = ST::mul(x.regs[i], y.regs[i]);
+template <typename EType, int size0, int... sizes>
+struct std::formatter<Vector<EType, size0, sizes...>> {
+  using V = Vector<EType, size0, sizes...>;
+  template <typename FormatContext>
+  auto format(const V &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "[");
+    for (int i = 0; i < size0; ++i) {
+      if (i > 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "{}", slice(x, i));
+    }
+    it = std::format_to(it, "]");
+    return it;
   }
-  return result;
-}
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
 
-#endif // HAY_Vector_H_
+template <typename EType, int size0>
+struct std::formatter<Vector<EType, size0>> {
+  using V = Vector<EType, size0>;
+  template <typename FormatContext>
+  auto format(const V &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "[");
+    for (int i = 0; i < size0; ++i) {
+      if (i > 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "{}", x.elems[i]);
+    }
+    it = std::format_to(it, "]");
+    return it;
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
+
+template <typename EType> struct std::formatter<Vector<EType>> {
+  using V = Vector<EType>;
+  template <typename FormatContext>
+  auto format(const V &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "[{}]", x.elems[0]);
+    return it;
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+};
+
+#endif // HAY_VECTOR_H_
