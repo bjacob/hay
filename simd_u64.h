@@ -26,7 +26,7 @@ template <> struct Int64xN<Simd::U64> {
   friend Int64xN sub(Int64xN x, Int64xN y) { return {x.val - y.val}; }
   friend Int64xN min(Int64xN x, Int64xN y) { return {std::min(x.val, y.val)}; }
   friend Int64xN max(Int64xN x, Int64xN y) { return {std::max(x.val, y.val)}; }
-  friend Int64 reduce_add(Int64xN x) { return {x.val}; }
+  friend int64_t reduce_add(Int64xN x) { return x.val; }
   static Int64xN load(const void *from) {
     return {*static_cast<const int64_t *>(from)};
   }
@@ -37,9 +37,9 @@ template <> struct Int64xN<Simd::U64> {
   static Int64xN zero() { return {0}; }
   static Int64xN cst(int64_t c) { return {c}; }
   static Int64xN wave() { return {0}; }
-  friend Int64 extract(Int64xN x, int i) {
+  friend int64_t extract(Int64xN x, int i) {
     assert(i == 0);
-    return {x.val};
+    return x.val;
   }
 };
 
@@ -85,9 +85,9 @@ template <> struct Uint1xN<Simd::U64> {
       return zero();
     }
   }
-  friend Uint1 extract(Uint1xN x, int i) {
+  friend uint8_t extract(Uint1xN x, int i) {
     assert(i < elem_count);
-    return {static_cast<uint8_t>((x.val >> i) & 1)};
+    return static_cast<uint8_t>((x.val >> i) & 1);
   }
 };
 

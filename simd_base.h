@@ -15,18 +15,6 @@ enum class Simd {
   Avx512,
 };
 
-struct Uint1 {
-  static constexpr int elem_bits = 1;
-  static constexpr int elem_count = 1;
-  uint8_t val : 1;
-};
-
-struct Int64 {
-  static constexpr int elem_bits = 64;
-  static constexpr int elem_count = 1;
-  int64_t val;
-};
-
 template <Simd s> struct Uint1xN {};
 template <Simd s> struct Int64xN {};
 

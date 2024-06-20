@@ -73,6 +73,30 @@ public:
     return result;
   }
 
+  friend Vector sub(Vector x, Vector y) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = sub(x.elems[i], y.elems[i]);
+    }
+    return result;
+  }
+
+  friend Vector min(Vector x, Vector y) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = min(x.elems[i], y.elems[i]);
+    }
+    return result;
+  }
+
+  friend Vector max(Vector x, Vector y) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = max(x.elems[i], y.elems[i]);
+    }
+    return result;
+  }
+
   friend Vector mul(Vector x, Vector y) {
     Vector result;
     for (int i = 0; i < flatSize; ++i) {

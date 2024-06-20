@@ -25,7 +25,7 @@ void check_eq_impl(const X &x, const Y &y, bool expected_equality,
                    int line) {
   if ((x == y) != expected_equality) {
     std::string str = std::format(
-        "Expected {} between {} , which has the value:\n{}\n\nand {}, which "
+        "Expected {} between {}, which has the value:\n{}\n\nand {}, which "
         "has "
         "the value:\n{}\n\n",
         (expected_equality ? "equality" : "non-equality"), xstr, x, ystr, y);

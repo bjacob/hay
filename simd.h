@@ -40,7 +40,7 @@ template <Simd s> struct std::formatter<Int64xN<s>> {
     auto it = ctx.out();
     it = std::format_to(it, "{{ ");
     for (int i = 0; i < Int64xN<s>::elem_count; ++i) {
-      it = std::format_to(it, "{} ", extract(x, i).val);
+      it = std::format_to(it, "{} ", extract(x, i));
     }
     it = std::format_to(it, "}}");
     return it;

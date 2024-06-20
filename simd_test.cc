@@ -20,7 +20,7 @@ template <Simd s> struct TestInt64xNLoadStore {
     Int64xN<s> y = Int64xN<s>::load(buf + Int64xN<s>::elem_count);
     CHECK_NE(x, y);
     for (int b = 0; b < Int64xN<s>::elem_count; ++b) {
-      CHECK(extract(x, b).val == b);
+      CHECK_EQ(extract(x, b), int64_t{b});
     }
     store(buf, y);
     CHECK_EQ(y, Int64xN<s>::load(buf));
@@ -39,7 +39,8 @@ template <Simd s> struct TestUint1xNLoadStore {
     Uint1xN<s> y = Uint1xN<s>::load(buf + sizeof(Uint1xN<s>));
     CHECK(!(x == y));
     for (int b = 0; b < Uint1xN<s>::elem_count; ++b) {
-      CHECK_EQ(extract(x, b).val, ((buf[b / 8] >> (b % 8)) & 1));
+      CHECK_EQ(extract(x, b),
+               uint8_t{static_cast<uint8_t>((buf[b / 8] >> (b % 8)) & 1)});
     }
     store(buf, y);
     CHECK_EQ(y, Uint1xN<s>::load(buf));
@@ -73,11 +74,11 @@ template <Simd s> struct TestInt64xNArithmetic {
     CHECK_EQ(add(x, min(y, z)), min(add(x, y), add(x, z)));
     int64_t r = 0;
     for (int i = 0; i < Int64xN<s>::elem_count; ++i) {
-      r += extract(x, i).val;
+      r += extract(x, i);
     }
-    CHECK_EQ(r, reduce_add(x).val);
-    CHECK_EQ(reduce_add(add(x, y)).val, reduce_add(x).val + reduce_add(y).val);
-    CHECK_EQ(reduce_add(Int64xN<s>::wave()).val,
+    CHECK_EQ(r, reduce_add(x));
+    CHECK_EQ(reduce_add(add(x, y)), reduce_add(x) + reduce_add(y));
+    CHECK_EQ(reduce_add(Int64xN<s>::wave()),
              Int64xN<s>::elem_count * (Int64xN<s>::elem_count - 1) / 2);
   }
 };
@@ -110,31 +111,29 @@ template <Simd s> struct TestUint1xNBitcounts {
   static void Run() {
     const int bits = Uint1xN<s>::elem_count;
     CHECK_EQ(bits, static_cast<int>(8 * sizeof(Uint1xN<s>)));
-    CHECK_EQ(reduce_add(lzcount64(Uint1xN<s>::zero())).val, bits);
-    CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::zero())).val, 0);
-    CHECK_EQ(reduce_add(lzcount64(Uint1xN<s>::ones())).val, 0);
-    CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::ones())).val, bits);
+    CHECK_EQ(reduce_add(lzcount64(Uint1xN<s>::zero())), bits);
+    CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::zero())), 0);
+    CHECK_EQ(reduce_add(lzcount64(Uint1xN<s>::ones())), 0);
+    CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::ones())), bits);
     for (int i = 0; (1 << i) < bits; ++i) {
       uint8_t buf[sizeof(Uint1xN<s>)] = {0};
       buf[i / 8] = 1u << (i % 8);
       Uint1xN<s> x = Uint1xN<s>::load(buf);
-      CHECK_EQ(extract(x, i).val, 1);
-      CHECK_EQ(reduce_add(popcount64(x)).val, 1);
-      CHECK_EQ(extract(lzcount64(x), i / 64).val, 63 - (i % 64));
+      CHECK_EQ(extract(x, i), 1);
+      CHECK_EQ(reduce_add(popcount64(x)), 1);
+      CHECK_EQ(extract(lzcount64(x), i / 64), 63 - (i % 64));
     }
     for (int i = 0; (1 << i) < bits; ++i) {
-      CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::wave(i))).val, bits / 2);
+      CHECK_EQ(reduce_add(popcount64(Uint1xN<s>::wave(i))), bits / 2);
       for (int j = 0; (1 << j) < bits; ++j) {
         if (i == j) {
           continue;
         }
         CHECK_EQ(reduce_add(
-                     popcount64(add(Uint1xN<s>::wave(i), Uint1xN<s>::wave(j))))
-                     .val,
+                     popcount64(add(Uint1xN<s>::wave(i), Uint1xN<s>::wave(j)))),
                  bits / 2);
         CHECK_EQ(reduce_add(
-                     popcount64(mul(Uint1xN<s>::wave(i), Uint1xN<s>::wave(j))))
-                     .val,
+                     popcount64(mul(Uint1xN<s>::wave(i), Uint1xN<s>::wave(j)))),
                  bits / 4);
       }
     }

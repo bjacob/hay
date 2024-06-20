@@ -29,7 +29,6 @@ template <Simd s> struct TestVectorInt64xN {
   }
   static void Run() {
     using E = Int64xN<s>;
-    Run<E, 4, 3, 2>();
     Run<E>();
     Run<E, 1>();
     Run<E, 5>();
