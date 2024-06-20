@@ -21,4 +21,15 @@ template <Simd s> struct Int64xN {};
 template <Simd s> const char *name();
 template <Simd s> bool detect();
 
+template <typename T> struct ScalarTypeImpl {
+  using Type = T;
+};
+template <Simd s> struct ScalarTypeImpl<Uint1xN<s>> {
+  using Type = uint8_t;
+};
+template <Simd s> struct ScalarTypeImpl<Int64xN<s>> {
+  using Type = int64_t;
+};
+template <typename T> using ScalarType = ScalarTypeImpl<T>::Type;
+
 #endif // HAY_SIMD_BASE_H_

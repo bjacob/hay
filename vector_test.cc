@@ -10,10 +10,9 @@
 #include "vector.h"
 
 template <Simd s> struct TestVectorInt64xN {
-
-  template <typename EType, int... sizesPack> static void Run() {
-    using E = Int64xN<s>;
-    using V = Vector<E, sizesPack...>;
+  using E = Int64xN<s>;
+  template <int... sizes> static void Run() {
+    using V = Vector<E, sizes...>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
     for (int i = 0; i < 2 * V::flatSize; ++i) {
@@ -28,13 +27,38 @@ template <Simd s> struct TestVectorInt64xN {
     CHECK_EQ(add(x, y), V::load(buf_add));
   }
   static void Run() {
-    using E = Int64xN<s>;
-    Run<E>();
-    Run<E, 1>();
-    Run<E, 5>();
-    Run<E, 2, 3>();
-    Run<E, 4, 3, 2>();
+    Run<>();
+    Run<1>();
+    Run<5>();
+    Run<2, 3>();
+    Run<4, 3, 2>();
   }
 };
 
-int main() { TEST(TestVectorInt64xN); }
+template <Simd s> struct TestVectorSeq {
+  template <int... sizes> static void Run() {
+    using E = Uint1xN<s>;
+    using V = Vector<E, sizes...>;
+    for (int k = 0; k < 4; ++k) {
+      V x = V::seq(k);
+      for (int i = 0; i < E::elem_count; ++i) {
+        auto e = extract(x, i);
+        for (int j = 0; j < e.flatSize; ++j) {
+          CHECK_EQ(e.elems[j], ((i + k * E::elem_count) >> j) & 1);
+        }
+      }
+    }
+  }
+  static void Run() {
+    Run<>();
+    Run<3>();
+    Run<3, 3>();
+    Run<2, 2, 2>();
+    Run<1, 3, 2, 1>();
+  }
+};
+
+int main() {
+  TEST(TestVectorInt64xN);
+  TEST(TestVectorSeq);
+}

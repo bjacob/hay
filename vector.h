@@ -7,6 +7,7 @@
 #ifndef HAY_VECTOR_H_
 #define HAY_VECTOR_H_
 
+#include "simd_base.h"
 #include <array>
 #include <cstdint>
 #include <format>
@@ -28,6 +29,7 @@ public:
   static constexpr int order = sizeof...(sizesPack);
   static constexpr int flatSize = (sizesPack * ... * 1);
   using Indices = std::array<int, order>;
+  using ScalarType = ScalarType<EType>;
   static Indices getSizes() { return Indices(sizesPack...); }
 
   static Indices getStrides() {
@@ -118,6 +120,35 @@ public:
     typename SliceType<EType, sizesPack...>::Type result;
     for (int j = 0; j < result.flatSize; ++j) {
       result.elems[j] = x.elems[j + i * result.flatSize];
+    }
+    return result;
+  }
+
+  friend Vector<ScalarType, sizesPack...> reduce_add(Vector x) {
+    Vector<ScalarType, sizesPack...> result;
+    for (int i = 0; i < result.flatSize; ++i) {
+      result.elems[i] = reduce_add(x.elems[i]);
+    }
+    return result;
+  }
+
+  friend Vector<ScalarType, sizesPack...> extract(Vector x, int i) {
+    Vector<ScalarType, sizesPack...> result;
+    for (int j = 0; j < result.flatSize; ++j) {
+      result.elems[j] = extract(x.elems[j], i);
+    }
+    return result;
+  }
+
+  static Vector seq(int i) {
+    Vector result;
+    int j = 0;
+    for (; (1 << j) < EType::elem_count && j < Vector::flatSize; ++j) {
+      result.elems[j] = EType::wave(j);
+    }
+    int k = 0;
+    for (; j < Vector::flatSize; ++j, ++k) {
+      result.elems[j] = (i & (1 << k)) ? EType::ones() : EType::zero();
     }
     return result;
   }
