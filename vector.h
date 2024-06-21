@@ -8,7 +8,6 @@
 #define HAY_VECTOR_H_
 
 #include "simd_base.h"
-#include "simd_x86.h"
 #include <array>
 #include <cstdint>
 #include <format>

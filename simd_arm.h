@@ -30,7 +30,7 @@ template <> struct Int64xN<Simd::Neon> {
     return {vbslq_s64(vcgeq_s64(x.val, y.val), x.val, y.val)};
   }
   friend int64_t reduce_add(Int64xN x) {
-    return {vgetq_lane_s64(x.val, 0) + vgetq_lane_s64(x.val, 1)};
+    return vgetq_lane_s64(x.val, 0) + vgetq_lane_s64(x.val, 1);
   }
   static Int64xN load(const void *from) {
     return {vld1q_s64(static_cast<const int64_t *>(from))};
@@ -42,14 +42,11 @@ template <> struct Int64xN<Simd::Neon> {
     uint64x2_t c = vceqq_s64(x.val, y.val);
     return vgetq_lane_u64(c, 0) && vgetq_lane_u64(c, 1);
   }
-  static Int64xN cst(int64_t c) {
-    assert(c == 0 || c == 1);
-    return {vdupq_n_s64(c)};
-  }
+  static Int64xN cst(int64_t c) { return {vdupq_n_s64(c)}; }
   static Int64xN seq() { return {vsetq_lane_s64(1, vdupq_n_s64(0), 1)}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i < elem_count);
-    return {i == 0 ? vgetq_lane_s64(x.val, 0) : vgetq_lane_s64(x.val, 1)};
+    return i == 0 ? vgetq_lane_s64(x.val, 0) : vgetq_lane_s64(x.val, 1);
   }
 };
 
@@ -110,7 +107,7 @@ template <> struct Uint1xN<Simd::Neon> {
     uint8x16_t a = vreinterpretq_u8_u64(x.val);
     uint8x8_t b = vtbl2_u8({vget_low_u8(a), vget_high_u8(a)}, vdup_n_u8(i / 8));
     uint8_t c = vget_lane_u8(b, 0);
-    return {static_cast<uint8_t>((c >> (i % 8)) & 1)};
+    return static_cast<uint8_t>((c >> (i % 8)) & 1);
   }
 };
 
