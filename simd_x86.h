@@ -49,7 +49,6 @@ template <> struct Int64xN<Simd::Avx512> {
     return _mm512_cmp_epi64_mask(x.val, y.val, _MM_CMPINT_EQ) == 0xFF;
   }
   static Int64xN cst(int64_t c) { return {_mm512_set1_epi64(c)}; }
-  static Int64xN seq() { return {_mm512_setr_epi64(0, 1, 2, 3, 4, 5, 6, 7)}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i < elem_count);
     return _mm256_extract_epi64(_mm512_castsi512_si256(_mm512_permutexvar_epi64(

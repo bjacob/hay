@@ -72,6 +72,15 @@ cc_library(
 
 cc_library(
     NAME
+        vector
+    HDRS
+        vector.h
+    DEPS
+        simd
+)
+
+cc_library(
+    NAME
         testlib
     HDRS
         testlib.h
@@ -79,6 +88,7 @@ cc_library(
         testlib.cc
     DEPS
         simd
+        vector
 )
 
 cc_test(
@@ -91,18 +101,13 @@ cc_test(
         testlib
 )
 
-cc_library(
-    NAME
-        vector
-)
-
 cc_test(
     NAME
         vector_test
     SRCS
         vector_test.cc
     DEPS
-        vector
         simd
         testlib
+        vector
 )

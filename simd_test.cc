@@ -62,9 +62,9 @@ template <Simd s> struct TestInt64xNArithmetic {
     CHECK_EQ(min(Int64xN<s>::cst(-123), Int64xN<s>::cst(-456)),
              Int64xN<s>::cst(-456));
     std::minstd_rand0 engine;
-    Int64xN<s> x = getRandomInt64xN<s>(engine);
-    Int64xN<s> y = getRandomInt64xN<s>(engine);
-    Int64xN<s> z = getRandomInt64xN<s>(engine);
+    Int64xN<s> x = getRandom<Int64xN<s>>(engine);
+    Int64xN<s> y = getRandom<Int64xN<s>>(engine);
+    Int64xN<s> z = getRandom<Int64xN<s>>(engine);
     CHECK_EQ(x, x);
     CHECK_EQ(add(x, Int64xN<s>::cst(0)), x);
     CHECK_NE(add(x, Int64xN<s>::cst(1)), x);
@@ -78,8 +78,6 @@ template <Simd s> struct TestInt64xNArithmetic {
     }
     CHECK_EQ(r, reduce_add(x));
     CHECK_EQ(reduce_add(add(x, y)), reduce_add(x) + reduce_add(y));
-    CHECK_EQ(reduce_add(Int64xN<s>::seq()),
-             Int64xN<s>::elem_count * (Int64xN<s>::elem_count - 1) / 2);
   }
 };
 
@@ -89,9 +87,9 @@ template <Simd s> struct TestUint1xNArithmetic {
     CHECK_EQ(Uint1xN<s>::cst(1), Uint1xN<s>::cst(1));
     CHECK_NE(Uint1xN<s>::cst(0), Uint1xN<s>::cst(1));
     std::minstd_rand0 engine;
-    Uint1xN<s> x = getRandomUint1xN<s>(engine);
-    Uint1xN<s> y = getRandomUint1xN<s>(engine);
-    Uint1xN<s> z = getRandomUint1xN<s>(engine);
+    Uint1xN<s> x = getRandom<Uint1xN<s>>(engine);
+    Uint1xN<s> y = getRandom<Uint1xN<s>>(engine);
+    Uint1xN<s> z = getRandom<Uint1xN<s>>(engine);
     CHECK_EQ(x, x);
     CHECK_NE(add(x, Uint1xN<s>::cst(1)), x);
     CHECK_EQ(add(x, x), Uint1xN<s>::cst(0));
@@ -162,6 +160,44 @@ template <Simd s> struct TestUint1xNSeq {
   }
 };
 
+template <Simd s> struct TestInt64xNFormat {
+  static void Run() {
+    static constexpr int elems = Int64xN<s>::elem_count;
+    int64_t buf[elems];
+    for (int i = 0; i < elems; ++i) {
+      buf[i] = 100000000000ll + i;
+    }
+    std::string actual = std::format("{}", Int64xN<s>::load(buf));
+    if (elems == 1) {
+      CHECK_EQ(actual, "{100000000000}");
+    } else if (elems == 2) {
+      CHECK_EQ(actual, "{100000000000, 100000000001}");
+    } else {
+      CHECK(actual.starts_with(
+          "{100000000000, 100000000001, 100000000002, 100000000003"));
+    }
+  }
+};
+
+template <Simd s> struct TestUint1xNFormat {
+  static void Run() {
+    static constexpr int bytes = sizeof(Uint1xN<s>);
+    uint8_t buf[bytes];
+    for (int i = 0; i < bytes; ++i) {
+      buf[i] = i;
+    }
+    std::string actual = std::format("{}", Uint1xN<s>::load(buf));
+    if (bytes == 8) {
+      CHECK_EQ(actual, "{0x0706050403020100}");
+    } else if (bytes == 16) {
+      CHECK_EQ(actual, "{0x0706050403020100, 0x0f0e0d0c0b0a0908}");
+    } else {
+      CHECK(actual.starts_with("{0x0706050403020100, 0x0f0e0d0c0b0a0908, "
+                               "0x1716151413121110, 0x1f1e1d1c1b1a1918"));
+    }
+  }
+};
+
 int main() {
   TEST(TestInt64xNLoadStore);
   TEST(TestUint1xNLoadStore);
@@ -169,4 +205,6 @@ int main() {
   TEST(TestUint1xNArithmetic);
   TEST(TestUint1xNBitcounts);
   TEST(TestUint1xNSeq);
+  TEST(TestInt64xNFormat);
+  TEST(TestUint1xNFormat);
 }

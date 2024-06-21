@@ -21,12 +21,16 @@
 template <Simd s> struct std::formatter<Uint1xN<s>> {
   template <typename FormatContext>
   auto format(const Uint1xN<s> &x, FormatContext &ctx) const {
-    uint64_t buf[sizeof(Uint1xN<s>) / sizeof(uint64_t)];
+    static constexpr int buf_elems = sizeof(Uint1xN<s>) / sizeof(uint64_t);
+    uint64_t buf[buf_elems];
     store(buf, x);
     auto it = ctx.out();
-    it = std::format_to(it, "{{ ");
-    for (uint64_t b : buf) {
-      it = std::format_to(it, "0x{:016x} ", b);
+    it = std::format_to(it, "{{");
+    for (int i = 0; i < buf_elems; ++i) {
+      if (i > 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "0x{:016x}", buf[i]);
     }
     it = std::format_to(it, "}}");
     return it;
@@ -38,9 +42,12 @@ template <Simd s> struct std::formatter<Int64xN<s>> {
   template <typename FormatContext>
   auto format(const Int64xN<s> &x, FormatContext &ctx) const {
     auto it = ctx.out();
-    it = std::format_to(it, "{{ ");
+    it = std::format_to(it, "{{");
     for (int i = 0; i < Int64xN<s>::elem_count; ++i) {
-      it = std::format_to(it, "{} ", extract(x, i));
+      if (i > 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "{}", extract(x, i));
     }
     it = std::format_to(it, "}}");
     return it;

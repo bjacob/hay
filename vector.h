@@ -7,7 +7,7 @@
 #ifndef HAY_VECTOR_H_
 #define HAY_VECTOR_H_
 
-#include "simd_base.h"
+#include "simd.h"
 #include <array>
 #include <cstdint>
 #include <format>
@@ -126,6 +126,14 @@ public:
     return result;
   }
 
+  friend Vector madd(Vector x, Vector y, Vector z) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = madd(x.elems[i], y.elems[i], z.elems[i]);
+    }
+    return result;
+  }
+
   friend bool operator==(Vector x, Vector y) {
     for (int i = 0; i < flatSize; ++i) {
       if (!(x.elems[i] == y.elems[i])) {
@@ -183,7 +191,7 @@ public:
   friend Int64Vector lzcount64(Vector x) {
     Int64Vector result;
     for (int i = 0; i < flatSize; ++i) {
-      result.elems[i] = popcount64(x.elems[i]);
+      result.elems[i] = lzcount64(x.elems[i]);
     }
     return result;
   }

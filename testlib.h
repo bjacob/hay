@@ -8,6 +8,7 @@
 #define HAY_TESTLIB_H_
 
 #include "simd.h"
+#include "vector.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -64,20 +65,42 @@ template <template <Simd> class TestClass> void Test(const char *testname) {
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
 
-template <Simd s> Uint1xN<s> getRandomUint1xN(std::minstd_rand0 &engine) {
-  uint32_t buf[sizeof(Uint1xN<s>) / sizeof(uint32_t)];
-  for (uint32_t &val : buf) {
-    val = engine();
-  }
-  return Uint1xN<s>::load(buf);
+template <typename T> struct GetRandomImpl {};
+
+template <typename T> T getRandom(std::minstd_rand0 &engine) {
+  return GetRandomImpl<T>::Run(engine);
 }
 
-template <Simd s> Int64xN<s> getRandomInt64xN(std::minstd_rand0 &engine) {
-  int64_t buf[Int64xN<s>::elem_count];
-  for (int64_t &val : buf) {
-    val = engine() - engine.max() / 2;
+template <Simd s> struct GetRandomImpl<Uint1xN<s>> {
+  static Uint1xN<s> Run(std::minstd_rand0 &engine) {
+    uint32_t buf[sizeof(Uint1xN<s>) / sizeof(uint32_t)];
+    for (uint32_t &val : buf) {
+      val = engine();
+    }
+    return Uint1xN<s>::load(buf);
   }
-  return Int64xN<s>::load(buf);
-}
+};
+
+template <Simd s> struct GetRandomImpl<Int64xN<s>> {
+  static Int64xN<s> Run(std::minstd_rand0 &engine) {
+    int64_t buf[Int64xN<s>::elem_count];
+    for (int64_t &val : buf) {
+      val = engine() - engine.max() / 2;
+    }
+    return Int64xN<s>::load(buf);
+  }
+};
+
+template <typename EType, int... sizes>
+struct GetRandomImpl<Vector<EType, sizes...>> {
+  using V = Vector<EType, sizes...>;
+  static V Run(std::minstd_rand0 &engine) {
+    V result;
+    for (int i = 0; i < V::flatSize; ++i) {
+      result.elems[i] = getRandom<EType>(engine);
+    }
+    return result;
+  }
+};
 
 #endif // HAY_TESTLIB_H_

@@ -43,7 +43,6 @@ template <> struct Int64xN<Simd::Neon> {
     return vgetq_lane_u64(c, 0) && vgetq_lane_u64(c, 1);
   }
   static Int64xN cst(int64_t c) { return {vdupq_n_s64(c)}; }
-  static Int64xN seq() { return {vsetq_lane_s64(1, vdupq_n_s64(0), 1)}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i < elem_count);
     return i == 0 ? vgetq_lane_s64(x.val, 0) : vgetq_lane_s64(x.val, 1);

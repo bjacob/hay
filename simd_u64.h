@@ -35,7 +35,6 @@ template <> struct Int64xN<Simd::U64> {
   }
   friend bool operator==(Int64xN x, Int64xN y) { return x.val == y.val; }
   static Int64xN cst(int64_t c) { return {c}; }
-  static Int64xN seq() { return {0}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i == 0);
     (void)i;
