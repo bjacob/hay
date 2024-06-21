@@ -8,11 +8,12 @@
 #define HAY_VECTOR_H_
 
 #include "simd_base.h"
+#include "simd_x86.h"
 #include <array>
 #include <cstdint>
 #include <format>
 
-template <typename EType, int... sizesPack> class Vector;
+template <typename EType, int... sizes> class Vector;
 
 template <typename EType, int... sizes> struct SliceType {};
 template <typename EType, int size0, int... sizes>
@@ -24,21 +25,32 @@ template <typename EType> struct SliceType<EType> {
   using Type = Vector<EType>;
 };
 
-template <typename EType, int... sizesPack> class Vector {
+template <typename EType> struct Int64EType {
+  using Type = EType;
+};
+template <Simd s> struct Int64EType<Uint1xN<s>> {
+  using Type = Int64xN<s>;
+};
+
+template <typename EType, int... sizes> class Vector {
 public:
-  static constexpr int order = sizeof...(sizesPack);
-  static constexpr int flatSize = (sizesPack * ... * 1);
+  static constexpr int order = sizeof...(sizes);
+  static constexpr int flatSize = (sizes * ... * 1);
   using Indices = std::array<int, order>;
   using ScalarType = ScalarType<EType>;
-  static Indices getSizes() { return Indices(sizesPack...); }
+  using SliceType = SliceType<EType, sizes...>;
+  using Int64EType = Int64EType<EType>::Type;
+  using Int64Vector = Vector<Int64EType, sizes...>;
+
+  static Indices getSizes() { return Indices{sizes...}; }
 
   static Indices getStrides() {
-    auto sizes = getSizes();
+    auto sizesArray = getSizes();
     Indices strides;
     int product = 1;
     for (int i = order - 1; i >= 0; --i) {
       strides[i] = product;
-      product *= sizes[i];
+      product *= sizesArray[i];
     }
     return strides;
   }
@@ -48,6 +60,14 @@ public:
     auto strides = getStrides();
     for (int i = 0; i < order; ++i) {
       result += indices[i] * strides[i];
+    }
+    return result;
+  }
+
+  static Vector cst(ScalarType c) {
+    Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = EType::cst(c);
     }
     return result;
   }
@@ -116,25 +136,25 @@ public:
     return true;
   }
 
-  friend SliceType<EType, sizesPack...>::Type slice(Vector x, int i) {
-    typename SliceType<EType, sizesPack...>::Type result;
+  friend SliceType::Type slice(Vector x, int i) {
+    typename SliceType::Type result;
     for (int j = 0; j < result.flatSize; ++j) {
       result.elems[j] = x.elems[j + i * result.flatSize];
     }
     return result;
   }
 
-  friend Vector<ScalarType, sizesPack...> reduce_add(Vector x) {
-    Vector<ScalarType, sizesPack...> result;
-    for (int i = 0; i < result.flatSize; ++i) {
+  friend Vector<ScalarType, sizes...> reduce_add(Vector x) {
+    Vector<ScalarType, sizes...> result;
+    for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = reduce_add(x.elems[i]);
     }
     return result;
   }
 
-  friend Vector<ScalarType, sizesPack...> extract(Vector x, int i) {
-    Vector<ScalarType, sizesPack...> result;
-    for (int j = 0; j < result.flatSize; ++j) {
+  friend Vector<ScalarType, sizes...> extract(Vector x, int i) {
+    Vector<ScalarType, sizes...> result;
+    for (int j = 0; j < flatSize; ++j) {
       result.elems[j] = extract(x.elems[j], i);
     }
     return result;
@@ -143,12 +163,28 @@ public:
   static Vector seq(int i) {
     Vector result;
     int j = 0;
-    for (; (1 << j) < EType::elem_count && j < Vector::flatSize; ++j) {
-      result.elems[j] = EType::wave(j);
+    for (; (1 << j) < EType::elem_count && j < flatSize; ++j) {
+      result.elems[j] = EType::seq(j);
     }
     int k = 0;
-    for (; j < Vector::flatSize; ++j, ++k) {
-      result.elems[j] = (i & (1 << k)) ? EType::ones() : EType::zero();
+    for (; j < flatSize; ++j, ++k) {
+      result.elems[j] = EType::cst((i >> k) & 1);
+    }
+    return result;
+  }
+
+  friend Int64Vector popcount64(Vector x) {
+    Int64Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = popcount64(x.elems[i]);
+    }
+    return result;
+  }
+
+  friend Int64Vector lzcount64(Vector x) {
+    Int64Vector result;
+    for (int i = 0; i < flatSize; ++i) {
+      result.elems[i] = popcount64(x.elems[i]);
     }
     return result;
   }

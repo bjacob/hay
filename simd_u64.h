@@ -34,11 +34,11 @@ template <> struct Int64xN<Simd::U64> {
     *static_cast<int64_t *>(to) = x.val;
   }
   friend bool operator==(Int64xN x, Int64xN y) { return x.val == y.val; }
-  static Int64xN zero() { return {0}; }
   static Int64xN cst(int64_t c) { return {c}; }
-  static Int64xN wave() { return {0}; }
+  static Int64xN seq() { return {0}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i == 0);
+    (void)i;
     return x.val;
   }
 };
@@ -65,9 +65,11 @@ template <> struct Uint1xN<Simd::U64> {
   friend Int64xN<Simd::U64> lzcount64(Uint1xN x) {
     return {std::countl_zero(x.val)};
   }
-  static Uint1xN zero() { return {0}; }
-  static Uint1xN ones() { return {0xFFFFFFFFFFFFFFFFu}; }
-  static Uint1xN wave(int i) {
+  static Uint1xN cst(uint8_t i) {
+    assert(i == 0 || i == 1);
+    return {i == 0 ? 0 : 0xFFFFFFFFFFFFFFFFu};
+  }
+  static Uint1xN seq(int i) {
     switch (i) {
     case 0:
       return {0xAAAAAAAAAAAAAAAAu};
@@ -82,7 +84,7 @@ template <> struct Uint1xN<Simd::U64> {
     case 5:
       return {0xFFFFFFFF00000000u};
     default:
-      return zero();
+      return cst(0);
     }
   }
   friend uint8_t extract(Uint1xN x, int i) {

@@ -9,7 +9,7 @@
 #include "testlib.h"
 #include "vector.h"
 
-template <Simd s> struct TestVectorInt64xN {
+template <Simd s> struct TestVectorInt64xNLoadStore {
   using E = Int64xN<s>;
   template <int... sizes> static void Run() {
     using V = Vector<E, sizes...>;
@@ -25,6 +25,8 @@ template <Simd s> struct TestVectorInt64xN {
     V x = V::load(buf);
     V y = V::load(buf + V::flatSize);
     CHECK_EQ(add(x, y), V::load(buf_add));
+    store(buf, y);
+    CHECK_EQ(y, V::load(buf));
   }
   static void Run() {
     Run<>();
@@ -35,7 +37,7 @@ template <Simd s> struct TestVectorInt64xN {
   }
 };
 
-template <Simd s> struct TestVectorSeq {
+template <Simd s> struct TestVectorUint1xNSeq {
   template <int... sizes> static void Run() {
     using E = Uint1xN<s>;
     using V = Vector<E, sizes...>;
@@ -59,6 +61,6 @@ template <Simd s> struct TestVectorSeq {
 };
 
 int main() {
-  TEST(TestVectorInt64xN);
-  TEST(TestVectorSeq);
+  TEST(TestVectorInt64xNLoadStore);
+  TEST(TestVectorUint1xNSeq);
 }

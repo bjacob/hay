@@ -48,9 +48,8 @@ template <> struct Int64xN<Simd::Avx512> {
   friend bool operator==(Int64xN x, Int64xN y) {
     return _mm512_cmp_epi64_mask(x.val, y.val, _MM_CMPINT_EQ) == 0xFF;
   }
-  static Int64xN zero() { return {_mm512_setzero_si512()}; }
   static Int64xN cst(int64_t c) { return {_mm512_set1_epi64(c)}; }
-  static Int64xN wave() { return {_mm512_setr_epi64(0, 1, 2, 3, 4, 5, 6, 7)}; }
+  static Int64xN seq() { return {_mm512_setr_epi64(0, 1, 2, 3, 4, 5, 6, 7)}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i < elem_count);
     return _mm256_extract_epi64(_mm512_castsi512_si256(_mm512_permutexvar_epi64(
@@ -83,9 +82,10 @@ template <> struct Uint1xN<Simd::Avx512> {
   friend Int64xN<Simd::Avx512> lzcount64(Uint1xN x) {
     return {_mm512_lzcnt_epi64(x.val)};
   }
-  static Uint1xN zero() { return {_mm512_setzero_si512()}; }
-  static Uint1xN ones() { return {_mm512_set1_epi8(0xFF)}; }
-  static Uint1xN wave(int i) {
+  static Uint1xN cst(uint8_t i) {
+    return {_mm512_set1_epi8(i == 0 ? 0 : 0xFF)};
+  }
+  static Uint1xN seq(int i) {
     switch (i) {
     case 0:
       return {_mm512_set1_epi8(0xAA)};
@@ -110,7 +110,7 @@ template <> struct Uint1xN<Simd::Avx512> {
       return {_mm512_inserti64x4(_mm512_setzero_si512(), _mm256_set1_epi8(0xFF),
                                  1)};
     default:
-      return zero();
+      return {_mm512_setzero_si512()};
     }
   }
   friend uint8_t extract(Uint1xN x, int i) {

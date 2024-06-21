@@ -42,9 +42,11 @@ template <> struct Int64xN<Simd::Neon> {
     uint64x2_t c = vceqq_s64(x.val, y.val);
     return vgetq_lane_u64(c, 0) && vgetq_lane_u64(c, 1);
   }
-  static Int64xN zero() { return {vdupq_n_s64(0)}; }
-  static Int64xN cst(int64_t c) { return {vdupq_n_s64(c)}; }
-  static Int64xN wave() { return {vsetq_lane_s64(1, vdupq_n_s64(0), 1)}; }
+  static Int64xN cst(int64_t c) {
+    assert(c == 0 || c == 1);
+    return {vdupq_n_s64(c)};
+  }
+  static Int64xN seq() { return {vsetq_lane_s64(1, vdupq_n_s64(0), 1)}; }
   friend int64_t extract(Int64xN x, int i) {
     assert(i < elem_count);
     return {i == 0 ? vgetq_lane_s64(x.val, 0) : vgetq_lane_s64(x.val, 1)};
@@ -82,9 +84,8 @@ template <> struct Uint1xN<Simd::Neon> {
     p = vsetq_lane_s64(std::countl_zero(vgetq_lane_u64(x.val, 1)), p, 1);
     return {p};
   }
-  static Uint1xN zero() { return {vdupq_n_u64(0)}; }
-  static Uint1xN ones() { return {vdupq_n_u64(-1)}; }
-  static Uint1xN wave(int i) {
+  static Uint1xN cst(uint8_t i) { return {vdupq_n_u64(i == 0 ? 0 : -1)}; }
+  static Uint1xN seq(int i) {
     switch (i) {
     case 0:
       return {vreinterpretq_u64_u8(vdupq_n_u8(0xAA))};
@@ -101,7 +102,7 @@ template <> struct Uint1xN<Simd::Neon> {
     case 6:
       return {vcombine_u64(vdup_n_u64(0), vdup_n_u64(-1))};
     default:
-      return zero();
+      return cst(0);
     }
   }
   friend uint8_t extract(Uint1xN x, int i) {
