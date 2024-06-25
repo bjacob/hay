@@ -8,19 +8,18 @@
 #define HAY_VECTOR_H_
 
 #include "simd.h"
-#include <array>
+
 #include <cstdint>
 #include <format>
 
 template <typename EType, int... sizes> class Vector;
 
-template <typename EType, int... sizes> struct SliceType {};
+template <typename EType, int... sizes> struct RowType {};
 template <typename EType, int size0, int... sizes>
-struct SliceType<EType, size0, sizes...> {
+struct RowType<EType, size0, sizes...> {
   using Type = Vector<EType, sizes...>;
 };
-
-template <typename EType> struct SliceType<EType> {
+template <typename EType> struct RowType<EType> {
   using Type = Vector<EType>;
 };
 
@@ -35,33 +34,14 @@ template <typename EType, int... sizes> class Vector {
 public:
   static constexpr int order = sizeof...(sizes);
   static constexpr int flatSize = (sizes * ... * 1);
-  using Indices = std::array<int, order>;
+  static constexpr int sizes_array[] = {sizes...};
+
   using ScalarType = ScalarType<EType>;
-  using SliceType = SliceType<EType, sizes...>;
+  using RowType = RowType<EType, sizes...>::Type;
   using Int64EType = Int64EType<EType>::Type;
   using Int64Vector = Vector<Int64EType, sizes...>;
-
-  static Indices getSizes() { return Indices{sizes...}; }
-
-  static Indices getStrides() {
-    auto sizesArray = getSizes();
-    Indices strides;
-    int product = 1;
-    for (int i = order - 1; i >= 0; --i) {
-      strides[i] = product;
-      product *= sizesArray[i];
-    }
-    return strides;
-  }
-
-  static int offset(Indices indices) {
-    int result = 0;
-    auto strides = getStrides();
-    for (int i = 0; i < order; ++i) {
-      result += indices[i] * strides[i];
-    }
-    return result;
-  }
+  template <int... permutation>
+  using TransposedType = Vector<EType, sizes_array[permutation]...>;
 
   static Vector cst(ScalarType c) {
     Vector result;
@@ -143,10 +123,26 @@ public:
     return true;
   }
 
-  friend SliceType::Type slice(Vector x, int i) {
-    typename SliceType::Type result;
+  friend RowType row(Vector x, int i) {
+    RowType result;
     for (int j = 0; j < result.flatSize; ++j) {
       result.elems[j] = x.elems[j + i * result.flatSize];
+    }
+    return result;
+  }
+
+  friend void insert_row(Vector &dst, RowType x, int i) {
+    for (int j = 0; j < x.flatSize; ++j) {
+      dst.elems[j + i * x.flatSize] = x.elems[j];
+    }
+  }
+
+  template <int... permutation>
+  friend TransposedType<permutation...> transpose(Vector x) {
+    static_assert(TransposedType<permutation...>::flatSize == flatSize);
+    TransposedType<permutation...> result;
+    for (int j = 0; j < x.flatSize; ++j) {
+      result.elems[j] = x.elems[j];
     }
     return result;
   }
@@ -213,7 +209,7 @@ struct std::formatter<Vector<EType, size0, sizes...>> {
       if (i > 0) {
         it = std::format_to(it, ", ");
       }
-      it = std::format_to(it, "{}", slice(x, i));
+      it = std::format_to(it, "{}", row(x, i));
     }
     it = std::format_to(it, "]");
     return it;

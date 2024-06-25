@@ -118,6 +118,63 @@ template <Simd s> struct TestVectorUint1xNArithmetic {
   }
 };
 
+template <Simd s> struct TestVectorUint1xNRow {
+  using E = Uint1xN<s>;
+  template <int... sizes> static void Run() {
+    using V = Vector<E, sizes...>;
+    std::minstd_rand0 engine;
+    V x = getRandom<V>(engine);
+    V z;
+    insert_row(z, row(x, 0), 0);
+    insert_row(z, row(x, 1), 1);
+    insert_row(z, row(x, 2), 2);
+    CHECK_EQ(x, z);
+  }
+  static void Run() {
+    Run<3>();
+    Run<3, 2>();
+    Run<3, 2, 4>();
+  }
+};
+
+template <Simd s> struct TestVectorUint1xNTranspose {
+  using E = Uint1xN<s>;
+  static void Run1() {
+    using V = Vector<E, 2>;
+    std::minstd_rand0 engine;
+    V x = getRandom<V>(engine);
+    V y = transpose<0>(x);
+    for (int i = 0; i < 1; i++) {
+      CHECK_EQ(y.elems[i], x.elems[i]);
+    }
+  }
+  static void Run2() {
+    using V23 = Vector<E, 2, 3>;
+    using V32 = Vector<E, 3, 2>;
+    std::minstd_rand0 engine;
+    V23 x = getRandom<V23>(engine);
+    V32 y = transpose<1, 0>(x);
+    for (int i = 0; i < 6; i++) {
+      CHECK_EQ(y.elems[i], x.elems[i]);
+    }
+  }
+  static void Run3() {
+    using V234 = Vector<E, 2, 3, 4>;
+    using V432 = Vector<E, 4, 3, 2>;
+    std::minstd_rand0 engine;
+    V234 x = getRandom<V234>(engine);
+    V432 y = transpose<2, 1, 0>(x);
+    for (int i = 0; i < 24; i++) {
+      CHECK_EQ(y.elems[i], x.elems[i]);
+    }
+  }
+  static void Run() {
+    Run1();
+    Run2();
+    Run3();
+  }
+};
+
 template <Simd s> struct TestVectorUint1xNSeq {
   template <int... sizes> static void Run() {
     using E = Uint1xN<s>;
@@ -167,6 +224,8 @@ int main() {
   TEST(TestVectorUint1xNLoadStore);
   TEST(TestVectorInt64xNArithmetic);
   TEST(TestVectorUint1xNArithmetic);
+  TEST(TestVectorUint1xNRow);
+  TEST(TestVectorUint1xNTranspose);
   TEST(TestVectorUint1xNSeq);
   TEST(TestVectorUint1Format);
   TEST(TestVectorUint1xNBits);
