@@ -9,6 +9,33 @@
 #include "testlib.h"
 #include "vector.h"
 
+template <Simd s> struct TestVectorUint1xNLayout {
+  using E = Uint1xN<s>;
+  static void Run1() {
+    using V = Vector<E, 3, 5, 4, 2>;
+    auto strides = V::get_strides();
+    CHECK_EQ(static_cast<int>(strides.size()), 4);
+    CHECK_EQ(strides[3], 1);
+    CHECK_EQ(strides[2], 2);
+    CHECK_EQ(strides[1], 8);
+    CHECK_EQ(strides[0], 40);
+    CHECK_EQ(V::flatten_indices({0, 0, 0, 0}), 0);
+    CHECK_EQ(V::flatten_indices({0, 0, 0, 1}), 1);
+    CHECK_EQ(V::flatten_indices({0, 0, 1, 0}), 2);
+    CHECK_EQ(V::flatten_indices({0, 1, 0, 0}), 8);
+    CHECK_EQ(V::flatten_indices({1, 0, 0, 0}), 40);
+    CHECK_EQ(V::flatten_indices({2, 1, 3, 1}), 95);
+    using Indices = V::Indices;
+    CHECK_EQ(V::unflatten_index(0), (Indices{0, 0, 0, 0}));
+    CHECK_EQ(V::unflatten_index(1), (Indices{0, 0, 0, 1}));
+    CHECK_EQ(V::unflatten_index(2), (Indices{0, 0, 1, 0}));
+    CHECK_EQ(V::unflatten_index(8), (Indices{0, 1, 0, 0}));
+    CHECK_EQ(V::unflatten_index(40), (Indices{1, 0, 0, 0}));
+    CHECK_EQ(V::unflatten_index(95), (Indices{2, 1, 3, 1}));
+  }
+  static void Run() { Run1(); }
+};
+
 template <Simd s> struct TestVectorInt64xNLoadStore {
   using E = Int64xN<s>;
   template <int... sizes> static void Run() {
@@ -137,13 +164,13 @@ template <Simd s> struct TestVectorUint1xNRow {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNTranspose {
+template <Simd s> struct TestVectorUint1xNReshape {
   using E = Uint1xN<s>;
   static void Run1() {
     using V = Vector<E, 2>;
     std::minstd_rand0 engine;
     V x = getRandom<V>(engine);
-    V y = transpose<0>(x);
+    V y = reshape<2>(x);
     for (int i = 0; i < 1; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
@@ -153,7 +180,7 @@ template <Simd s> struct TestVectorUint1xNTranspose {
     using V32 = Vector<E, 3, 2>;
     std::minstd_rand0 engine;
     V23 x = getRandom<V23>(engine);
-    V32 y = transpose<1, 0>(x);
+    V32 y = reshape<3, 2>(x);
     for (int i = 0; i < 6; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
@@ -163,8 +190,28 @@ template <Simd s> struct TestVectorUint1xNTranspose {
     using V432 = Vector<E, 4, 3, 2>;
     std::minstd_rand0 engine;
     V234 x = getRandom<V234>(engine);
-    V432 y = transpose<2, 1, 0>(x);
+    V432 y = reshape<4, 3, 2>(x);
     for (int i = 0; i < 24; i++) {
+      CHECK_EQ(y.elems[i], x.elems[i]);
+    }
+  }
+  static void Run4() {
+    using V234 = Vector<E, 15>;
+    using V432 = Vector<E, 3, 5>;
+    std::minstd_rand0 engine;
+    V234 x = getRandom<V234>(engine);
+    V432 y = reshape<3, 5>(x);
+    for (int i = 0; i < 15; i++) {
+      CHECK_EQ(y.elems[i], x.elems[i]);
+    }
+  }
+  static void Run5() {
+    using V234 = Vector<E, 1, 2, 3>;
+    using V432 = Vector<E, 6>;
+    std::minstd_rand0 engine;
+    V234 x = getRandom<V234>(engine);
+    V432 y = reshape<6>(x);
+    for (int i = 0; i < 6; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
   }
@@ -172,7 +219,37 @@ template <Simd s> struct TestVectorUint1xNTranspose {
     Run1();
     Run2();
     Run3();
+    Run4();
+    Run5();
   }
+};
+
+template <Simd s> struct TestVectorUint1xNTranspose {
+  using E = Uint1xN<s>;
+  static void Run1() {
+    using V2345 = Vector<E, 2, 3, 4, 5>;
+    using V4352 = Vector<E, 4, 3, 5, 2>;
+    std::minstd_rand0 engine;
+    V2345 x = getRandom<V2345>(engine);
+    // Check that this test won't be vacuous.
+    CHECK_NE(x.elems[0], E::cst(0));
+    CHECK_NE(x.elems[1], E::cst(0));
+    V4352 y = transpose<2, 1, 3, 0>(x);
+    CHECK_EQ(y.elems[0], x.elems[0]);
+    CHECK_EQ(y.elems[1], x.elems[60]);
+    CHECK_EQ(y.elems[2], x.elems[1]);
+    CHECK_EQ(y.elems[3], x.elems[61]);
+    CHECK_EQ(y.elems[8], x.elems[4]);
+    CHECK_EQ(y.elems[9], x.elems[64]);
+    CHECK_EQ(y.elems[10], x.elems[20]);
+    CHECK_EQ(y.elems[19], x.elems[84]);
+    CHECK_EQ(y.elems[29], x.elems[104]);
+    CHECK_EQ(y.elems[30], x.elems[5]);
+    CHECK_EQ(y.elems[31], x.elems[65]);
+    CHECK_EQ(y.elems[39], x.elems[69]);
+    CHECK_EQ(y.elems[119], x.elems[119]);
+  }
+  static void Run() { Run1(); }
 };
 
 template <Simd s> struct TestVectorUint1xNSeq {
@@ -220,11 +297,13 @@ template <Simd s> struct TestVectorUint1xNBits {
 };
 
 int main() {
+  TEST(TestVectorUint1xNLayout);
   TEST(TestVectorInt64xNLoadStore);
   TEST(TestVectorUint1xNLoadStore);
   TEST(TestVectorInt64xNArithmetic);
   TEST(TestVectorUint1xNArithmetic);
   TEST(TestVectorUint1xNRow);
+  TEST(TestVectorUint1xNReshape);
   TEST(TestVectorUint1xNTranspose);
   TEST(TestVectorUint1xNSeq);
   TEST(TestVectorUint1Format);

@@ -10,6 +10,7 @@
 #include "simd.h"
 #include "vector.h"
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <format>
@@ -101,6 +102,23 @@ struct GetRandomImpl<Vector<EType, sizes...>> {
     }
     return result;
   }
+};
+
+template <typename T, int s> struct std::formatter<std::array<T, s>> {
+  template <typename FormatContext>
+  auto format(const std::array<T, s> &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "{{");
+    for (int i = 0; i < static_cast<int>(x.size()); ++i) {
+      if (i != 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "{}", x[i]);
+    }
+    it = std::format_to(it, "}}");
+    return it;
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 #endif // HAY_TESTLIB_H_

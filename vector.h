@@ -9,6 +9,7 @@
 
 #include "simd.h"
 
+#include <array>
 #include <cstdint>
 #include <format>
 
@@ -42,6 +43,37 @@ public:
   using Int64Vector = Vector<Int64EType, sizes...>;
   template <int... permutation>
   using TransposedType = Vector<EType, sizes_array[permutation]...>;
+
+  using Indices = std::array<int, order>;
+
+  static Indices get_strides() {
+    Indices s;
+    int p = 1;
+    for (int i = order - 1; i >= 0; --i) {
+      s[i] = p;
+      p *= sizes_array[i];
+    }
+    return s;
+  }
+
+  static int flatten_indices(Indices indices) {
+    Indices strides = get_strides();
+    int f = 0;
+    for (int i = 0; i < order; ++i) {
+      f += strides[i] * indices[i];
+    }
+    return f;
+  }
+
+  static Indices unflatten_index(int flat_index) {
+    Indices strides = get_strides();
+    Indices result_indices;
+    for (int i = 0; i < order; ++i) {
+      result_indices[i] = flat_index / strides[i];
+      flat_index -= result_indices[i] * strides[i];
+    }
+    return result_indices;
+  }
 
   static Vector cst(ScalarType c) {
     Vector result;
@@ -137,12 +169,31 @@ public:
     }
   }
 
+  template <int... newSizes>
+  friend Vector<EType, newSizes...> reshape(Vector x) {
+    using ResultVector = Vector<EType, newSizes...>;
+    static_assert(ResultVector::flatSize == flatSize);
+    ResultVector result;
+    for (int j = 0; j < flatSize; ++j) {
+      result.elems[j] = x.elems[j];
+    }
+    return result;
+  }
+
   template <int... permutation>
   friend TransposedType<permutation...> transpose(Vector x) {
-    static_assert(TransposedType<permutation...>::flatSize == flatSize);
-    TransposedType<permutation...> result;
-    for (int j = 0; j < x.flatSize; ++j) {
-      result.elems[j] = x.elems[j];
+    using ResultVector = TransposedType<permutation...>;
+    static_assert(ResultVector::flatSize == flatSize);
+    ResultVector result;
+    static constexpr int permutation_array[] = {permutation...};
+    for (int j = 0; j < flatSize; ++j) {
+      Indices source_indices = unflatten_index(j);
+      Indices permuted_indices;
+      for (int k = 0; k < order; ++k) {
+        permuted_indices[k] = source_indices[permutation_array[k]];
+      }
+      int result_index = ResultVector::flatten_indices(permuted_indices);
+      result.elems[result_index] = x.elems[j];
     }
     return result;
   }
