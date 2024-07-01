@@ -92,9 +92,9 @@ template <Simd s> struct GetRandomImpl<Int64xN<s>> {
   }
 };
 
-template <typename EType, int... sizes>
-struct GetRandomImpl<Vector<EType, sizes...>> {
-  using V = Vector<EType, sizes...>;
+template <typename EType, Indices sizes>
+struct GetRandomImpl<Vector<EType, sizes>> {
+  using V = Vector<EType, sizes>;
   static V Run(std::minstd_rand0 &engine) {
     V result;
     for (int i = 0; i < V::flatSize; ++i) {
@@ -102,23 +102,6 @@ struct GetRandomImpl<Vector<EType, sizes...>> {
     }
     return result;
   }
-};
-
-template <typename T, int s> struct std::formatter<std::array<T, s>> {
-  template <typename FormatContext>
-  auto format(const std::array<T, s> &x, FormatContext &ctx) const {
-    auto it = ctx.out();
-    it = std::format_to(it, "{{");
-    for (int i = 0; i < static_cast<int>(x.size()); ++i) {
-      if (i != 0) {
-        it = std::format_to(it, ", ");
-      }
-      it = std::format_to(it, "{}", x[i]);
-    }
-    it = std::format_to(it, "}}");
-    return it;
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 #endif // HAY_TESTLIB_H_

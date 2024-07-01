@@ -13,16 +13,46 @@
 #include <cstdint>
 #include <format>
 
-template <typename EType, int... sizes> class Vector;
+using Index = int;
 
-template <typename EType, int... sizes> struct RowType {};
-template <typename EType, int size0, int... sizes>
-struct RowType<EType, size0, sizes...> {
-  using Type = Vector<EType, sizes...>;
+template <int order> struct Indices : std::array<Index, order> {};
+
+template <int order> struct std::formatter<Indices<order>> {
+  using I = Indices<order>;
+  template <typename FormatContext>
+  auto format(const I &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "[");
+    for (int i = 0; i < order; ++i) {
+      if (i > 0) {
+        it = std::format_to(it, ", ");
+      }
+      it = std::format_to(it, "{}", x[i]);
+    }
+    it = std::format_to(it, "]");
+    return it;
+  }
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
-template <typename EType> struct RowType<EType> {
-  using Type = Vector<EType>;
-};
+
+template <int order>
+inline constexpr Indices<(order >= 1 ? order - 1 : 0)> drop(Indices<order> src,
+                                                            int drop_index) {
+  Indices<(order >= 1 ? order - 1 : 0)> result;
+  int j = 0;
+  for (int i = 0; i < order; ++i) {
+    if (i == drop_index) {
+      continue;
+    }
+    result[j++] = src[i];
+  }
+  return result;
+}
+
+template <typename EType, Indices sizes> class Vector;
+
+template <typename EType, Indices sizes>
+using RowType = Vector<EType, drop(sizes, 0)>;
 
 template <typename EType> struct Int64EType {
   using Type = EType;
@@ -31,43 +61,57 @@ template <Simd s> struct Int64EType<Uint1xN<s>> {
   using Type = Int64xN<s>;
 };
 
-template <typename EType, int... sizes> class Vector {
+template <int order> inline constexpr int product(Indices<order> sizes) {
+  return std::reduce(std::begin(sizes), std::end(sizes), Index{1},
+                     std::multiplies<Index>());
+}
+
+template <int order>
+inline constexpr Indices<order> permute(Indices<order> src,
+                                        Indices<order> permutation) {
+  Indices<order> result;
+  for (int i = 0; i < order; ++i) {
+    result[i] = src[permutation[i]];
+  }
+  return result;
+}
+
+template <typename EType, Indices sizes> class Vector {
 public:
-  static constexpr int order = sizeof...(sizes);
-  static constexpr int flatSize = (sizes * ... * 1);
-  static constexpr int sizes_array[] = {sizes...};
+  static constexpr int order = sizes.size();
+  static constexpr int flatSize = product(sizes);
 
   using ScalarType = ScalarType<EType>;
-  using RowType = RowType<EType, sizes...>::Type;
+  using RowType = RowType<EType, sizes>;
   using Int64EType = Int64EType<EType>::Type;
-  using Int64Vector = Vector<Int64EType, sizes...>;
-  template <int... permutation>
-  using TransposedType = Vector<EType, sizes_array[permutation]...>;
+  using Int64Vector = Vector<Int64EType, sizes>;
+  template <Indices permutation>
+  using TransposedType = Vector<EType, permute(sizes, permutation)>;
 
-  using Indices = std::array<int, order>;
+  using IndicesType = Indices<order>;
 
-  static Indices get_strides() {
-    Indices s;
-    int p = 1;
+  static IndicesType get_strides() {
+    IndicesType s;
+    Index p = 1;
     for (int i = order - 1; i >= 0; --i) {
       s[i] = p;
-      p *= sizes_array[i];
+      p *= sizes[i];
     }
     return s;
   }
 
-  static int flatten_indices(Indices indices) {
-    Indices strides = get_strides();
-    int f = 0;
+  static int flatten_indices(IndicesType indices) {
+    IndicesType strides = get_strides();
+    Index f = 0;
     for (int i = 0; i < order; ++i) {
       f += strides[i] * indices[i];
     }
     return f;
   }
 
-  static Indices unflatten_index(int flat_index) {
-    Indices strides = get_strides();
-    Indices result_indices;
+  static IndicesType unflatten_index(int flat_index) {
+    IndicesType strides = get_strides();
+    IndicesType result_indices;
     for (int i = 0; i < order; ++i) {
       result_indices[i] = flat_index / strides[i];
       flat_index -= result_indices[i] * strides[i];
@@ -169,9 +213,8 @@ public:
     }
   }
 
-  template <int... newSizes>
-  friend Vector<EType, newSizes...> reshape(Vector x) {
-    using ResultVector = Vector<EType, newSizes...>;
+  template <Indices newSizes> friend Vector<EType, newSizes> reshape(Vector x) {
+    using ResultVector = Vector<EType, newSizes>;
     static_assert(ResultVector::flatSize == flatSize);
     ResultVector result;
     for (int j = 0; j < flatSize; ++j) {
@@ -180,34 +223,30 @@ public:
     return result;
   }
 
-  template <int... permutation>
-  friend TransposedType<permutation...> transpose(Vector x) {
-    using ResultVector = TransposedType<permutation...>;
+  template <Indices permutation>
+  friend TransposedType<permutation> transpose(Vector x) {
+    using ResultVector = TransposedType<permutation>;
     static_assert(ResultVector::flatSize == flatSize);
     ResultVector result;
-    static constexpr int permutation_array[] = {permutation...};
     for (int j = 0; j < flatSize; ++j) {
       Indices source_indices = unflatten_index(j);
-      Indices permuted_indices;
-      for (int k = 0; k < order; ++k) {
-        permuted_indices[k] = source_indices[permutation_array[k]];
-      }
+      Indices permuted_indices = permute(source_indices, permutation);
       int result_index = ResultVector::flatten_indices(permuted_indices);
       result.elems[result_index] = x.elems[j];
     }
     return result;
   }
 
-  friend Vector<ScalarType, sizes...> reduce_add(Vector x) {
-    Vector<ScalarType, sizes...> result;
+  friend Vector<ScalarType, sizes> reduce_add(Vector x) {
+    Vector<ScalarType, sizes> result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = reduce_add(x.elems[i]);
     }
     return result;
   }
 
-  friend Vector<ScalarType, sizes...> extract(Vector x, int i) {
-    Vector<ScalarType, sizes...> result;
+  friend Vector<ScalarType, sizes> extract(Vector x, int i) {
+    Vector<ScalarType, sizes> result;
     for (int j = 0; j < flatSize; ++j) {
       result.elems[j] = extract(x.elems[j], i);
     }
@@ -246,53 +285,24 @@ public:
   EType elems[flatSize];
 };
 
-template <typename EType, int... sizes>
-struct std::formatter<Vector<EType, sizes...>> {};
-
-template <typename EType, int size0, int... sizes>
-struct std::formatter<Vector<EType, size0, sizes...>> {
-  using V = Vector<EType, size0, sizes...>;
+template <typename EType, Indices sizes>
+struct std::formatter<Vector<EType, sizes>> {
+  using V = Vector<EType, sizes>;
   template <typename FormatContext>
   auto format(const V &x, FormatContext &ctx) const {
     auto it = ctx.out();
-    it = std::format_to(it, "[");
-    for (int i = 0; i < size0; ++i) {
-      if (i > 0) {
-        it = std::format_to(it, ", ");
+    if constexpr (V::order == 0) {
+      it = std::format_to(it, "{}", x.elems[0]);
+    } else {
+      it = std::format_to(it, "[");
+      for (int i = 0; i < sizes[0]; ++i) {
+        if (i > 0) {
+          it = std::format_to(it, ", ");
+        }
+        it = std::format_to(it, "{}", row(x, i));
       }
-      it = std::format_to(it, "{}", row(x, i));
+      it = std::format_to(it, "]");
     }
-    it = std::format_to(it, "]");
-    return it;
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-};
-
-template <typename EType, int size0>
-struct std::formatter<Vector<EType, size0>> {
-  using V = Vector<EType, size0>;
-  template <typename FormatContext>
-  auto format(const V &x, FormatContext &ctx) const {
-    auto it = ctx.out();
-    it = std::format_to(it, "[");
-    for (int i = 0; i < size0; ++i) {
-      if (i > 0) {
-        it = std::format_to(it, ", ");
-      }
-      it = std::format_to(it, "{}", x.elems[i]);
-    }
-    it = std::format_to(it, "]");
-    return it;
-  }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-};
-
-template <typename EType> struct std::formatter<Vector<EType>> {
-  using V = Vector<EType>;
-  template <typename FormatContext>
-  auto format(const V &x, FormatContext &ctx) const {
-    auto it = ctx.out();
-    it = std::format_to(it, "[{}]", x.elems[0]);
     return it;
   }
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
