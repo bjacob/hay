@@ -17,6 +17,11 @@ using Index = int;
 
 template <int order> struct Indices : std::array<Index, order> {};
 
+// Deduction guide allowing passing an initializer list of integer sizes for the
+// shape of a Vector type.
+template <typename... IntTypes>
+Indices(IntTypes...) -> Indices<sizeof...(IntTypes)>;
+
 template <int order> struct std::formatter<Indices<order>> {
   using I = Indices<order>;
   template <typename FormatContext>

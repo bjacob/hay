@@ -12,8 +12,7 @@
 template <Simd s> struct TestVectorUint1xNLayout {
   using E = Uint1xN<s>;
   static void Run1() {
-    constexpr Indices<4> I{3, 5, 4, 2};
-    using V = Vector<E, I>;
+    using V = Vector<E, {3, 5, 4, 2}>;
     auto strides = V::get_strides();
     CHECK_EQ(static_cast<int>(strides.size()), 4);
     CHECK_EQ(strides[3], 1);
@@ -38,8 +37,7 @@ template <Simd s> struct TestVectorUint1xNLayout {
 
 template <Simd s> struct TestVectorInt64xNLoadStore {
   using E = Int64xN<s>;
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
@@ -51,18 +49,17 @@ template <Simd s> struct TestVectorInt64xNLoadStore {
     CHECK_EQ(y, V::load(buf));
   }
   static void Run() {
-    Run<>();
-    Run<1>();
-    Run<5>();
-    Run<2, 3>();
-    Run<4, 3, 2>();
+    Run<{}>();
+    Run<{1}>();
+    Run<{5}>();
+    Run<{2, 3}>();
+    Run<{4, 3, 2}>();
   }
 };
 
 template <Simd s> struct TestVectorUint1xNLoadStore {
   using E = Uint1xN<s>;
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
@@ -74,18 +71,17 @@ template <Simd s> struct TestVectorUint1xNLoadStore {
     CHECK_EQ(y, V::load(buf));
   }
   static void Run() {
-    Run<>();
-    Run<1>();
-    Run<5>();
-    Run<2, 3>();
-    Run<4, 3, 2>();
+    Run<{}>();
+    Run<{1}>();
+    Run<{5}>();
+    Run<{2, 3}>();
+    Run<{4, 3, 2}>();
   }
 };
 
 template <Simd s> struct TestVectorInt64xNArithmetic {
   using E = Int64xN<s>;
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
     V x = getRandom<V>(engine);
@@ -112,18 +108,17 @@ template <Simd s> struct TestVectorInt64xNArithmetic {
     }
   }
   static void Run() {
-    Run<>();
-    Run<1>();
-    Run<5>();
-    Run<2, 3>();
-    Run<4, 3, 2>();
+    Run<{}>();
+    Run<{1}>();
+    Run<{5}>();
+    Run<{2, 3}>();
+    Run<{4, 3, 2}>();
   }
 };
 
 template <Simd s> struct TestVectorUint1xNArithmetic {
   using E = Uint1xN<s>;
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
     V x = getRandom<V>(engine);
@@ -141,18 +136,17 @@ template <Simd s> struct TestVectorUint1xNArithmetic {
     }
   }
   static void Run() {
-    Run<>();
-    Run<1>();
-    Run<5>();
-    Run<2, 3>();
-    Run<4, 3, 2>();
+    Run<{}>();
+    Run<{1}>();
+    Run<{5}>();
+    Run<{2, 3}>();
+    Run<{4, 3, 2}>();
   }
 };
 
 template <Simd s> struct TestVectorUint1xNRow {
   using E = Uint1xN<s>;
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
     V x = getRandom<V>(engine);
@@ -163,9 +157,9 @@ template <Simd s> struct TestVectorUint1xNRow {
     CHECK_EQ(x, z);
   }
   static void Run() {
-    Run<3>();
-    Run<3, 2>();
-    Run<3, 2, 4>();
+    Run<{3}>();
+    Run<{3, 2}>();
+    Run<{3, 2, 4}>();
   }
 };
 
@@ -258,8 +252,7 @@ template <Simd s> struct TestVectorUint1xNTranspose {
 };
 
 template <Simd s> struct TestVectorUint1xNSeq {
-  template <int... tsizes> static void Run() {
-    constexpr Indices<sizeof...(tsizes)> sizes{tsizes...};
+  template <Indices sizes> static void Run() {
     using E = Uint1xN<s>;
     using V = Vector<E, sizes>;
     for (int k = 0; k < 4; ++k) {
@@ -273,11 +266,11 @@ template <Simd s> struct TestVectorUint1xNSeq {
     }
   }
   static void Run() {
-    Run<>();
-    Run<3>();
-    Run<3, 3>();
-    Run<2, 2, 2>();
-    Run<1, 3, 2, 1>();
+    Run<{}>();
+    Run<{3}>();
+    Run<{3, 3}>();
+    Run<{2, 2, 2}>();
+    Run<{1, 3, 2, 1}>();
   }
 };
 
