@@ -40,16 +40,25 @@ template <int order> struct std::formatter<Indices<order>> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 };
 
-template <int order>
-inline constexpr Indices<(order >= 1 ? order - 1 : 0)> drop(Indices<order> src,
-                                                            int drop_index) {
-  Indices<(order >= 1 ? order - 1 : 0)> result;
-  int j = 0;
-  for (int i = 0; i < order; ++i) {
-    if (i == drop_index) {
-      continue;
+template <int order, int ndrops>
+inline constexpr Indices<std::max(0, order - ndrops)>
+drop(Indices<order> src, Indices<ndrops> drops) {
+  Indices<std::max(0, order - ndrops)> result{};
+  if (result.size() == 0) {
+    return result;
+  }
+  int src_pos = 0;
+  int result_pos = 0;
+  for (int drop : drops) {
+    // Copy src values until we hit `drop`.
+    while (src_pos < drop) {
+      result[result_pos++] = src[src_pos++];
     }
-    result[j++] = src[i];
+    src_pos++; // Hit `drop`, so drop that one.
+  }
+  // Append remaining src values past the last drop.
+  while (src_pos < order) {
+    result[result_pos++] = src[src_pos++];
   }
   return result;
 }
@@ -57,7 +66,7 @@ inline constexpr Indices<(order >= 1 ? order - 1 : 0)> drop(Indices<order> src,
 template <typename EType, Indices sizes> class Vector;
 
 template <typename EType, Indices sizes>
-using RowType = Vector<EType, drop(sizes, 0)>;
+using RowType = Vector<EType, drop(sizes, Indices{0})>;
 
 template <typename EType> struct Int64EType {
   using Type = EType;
@@ -240,6 +249,25 @@ public:
       result.elems[result_index] = x.elems[j];
     }
     return result;
+  }
+
+  template <Indices contracted>
+  friend Vector<EType, drop(sizes, contracted)> contract(Vector x) {
+    static_assert(contracted.size() == 2);
+    static_assert(contracted[0] < contracted[1]);
+    static_assert(sizes[contracted[0]] == sizes[contracted[1]]);
+    using ResultVector = Vector<EType, drop(sizes, contracted)>;
+    using ResultIndices = ResultVector::IndicesType;
+    ResultVector r = ResultVector::cst(0);
+    for (int i = 0; i < flatSize; ++i) {
+      Indices src_ind = unflatten_index(i);
+      if (src_ind[contracted[0]] == src_ind[contracted[1]]) {
+        ResultIndices dst_ind = drop(src_ind, contracted);
+        int dst_flat_idx = ResultVector::flatten_indices(dst_ind);
+        r.elems[dst_flat_idx] = add(r.elems[dst_flat_idx], x.elems[i]);
+      }
+    }
+    return r;
   }
 
   friend Vector<ScalarType, sizes> reduce_add(Vector x) {
