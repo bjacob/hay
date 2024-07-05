@@ -301,17 +301,39 @@ template <Simd s> struct TestVectorUint1xNContractUnary {
     using V33 = Vector<E, {3, 3}>;
     std::minstd_rand0 engine;
     V33 x = getRandom<V33>(engine);
-    Vector<E, {}> x_contracted = contract<{0, 1}>(x);
+    Vector<E, {}> x_contracted = contract<0, 1>(x);
     CHECK_EQ(x_contracted.elems[0],
              (add(x.elems[0], add(x.elems[4], x.elems[8]))));
+    CHECK_EQ(x_contracted.elems[0], trace(x));
     using V32323 = Vector<E, {3, 2, 3, 2, 3}>;
     using V333 = Vector<E, {3, 3, 3}>;
     V32323 y = getRandom<V32323>(engine);
-    V333 y_contracted = contract<{1, 3}>(y);
+    V333 y_contracted = contract<1, 3>(y);
     CHECK_EQ(y_contracted.elems[0], (add(y.elems[0], y.elems[21])));
     CHECK_EQ(y_contracted.elems[1], (add(y.elems[1], y.elems[22])));
     CHECK_EQ(y_contracted.elems[2], (add(y.elems[2], y.elems[23])));
     CHECK_EQ(y_contracted.elems[3], (add(y.elems[6], y.elems[27])));
+  }
+};
+
+template <Simd s> struct TestVectorUint1xNContractBinary {
+  static void Run() {
+    using E = Uint1xN<s>;
+    using V32 = Vector<E, {3, 2}>;
+    using V24 = Vector<E, {2, 4}>;
+    std::minstd_rand0 engine;
+    V32 x = getRandom<V32>(engine);
+    V24 y = getRandom<V24>(engine);
+    Vector<E, {3, 4}> contract_result = contract<1, 0>(x, y);
+    Vector<E, {3, 4}> matmul_result = matmul(x, y);
+    CHECK_EQ(contract_result, matmul_result);
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        CHECK_EQ(matmul_result.elems[4 * i + j],
+                 add(mul(x.elems[2 * i + 0], y.elems[j]),
+                     mul(x.elems[2 * i + 1], y.elems[4 + j])));
+      }
+    }
   }
 };
 
@@ -328,4 +350,5 @@ int main() {
   TEST(TestVectorUint1Format);
   TEST(TestVectorUint1xNBits);
   TEST(TestVectorUint1xNContractUnary);
+  TEST(TestVectorUint1xNContractBinary);
 }

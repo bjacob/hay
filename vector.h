@@ -41,8 +41,8 @@ template <int order> struct std::formatter<Indices<order>> {
 };
 
 template <int order, int ndrops>
-inline constexpr Indices<std::max(0, order - ndrops)>
-drop(Indices<order> src, Indices<ndrops> drops) {
+constexpr Indices<std::max(0, order - ndrops)> drop(Indices<order> src,
+                                                    Indices<ndrops> drops) {
   Indices<std::max(0, order - ndrops)> result{};
   if (result.size() == 0) {
     return result;
@@ -59,6 +59,19 @@ drop(Indices<order> src, Indices<ndrops> drops) {
   // Append remaining src values past the last drop.
   while (src_pos < order) {
     result[result_pos++] = src[src_pos++];
+  }
+  return result;
+}
+
+template <int order1, int order2>
+constexpr Indices<order1 + order2> concat(Indices<order1> indices1,
+                                          Indices<order2> indices2) {
+  Indices<order1 + order2> result{};
+  for (int i = 0; i < order1; ++i) {
+    result[i] = indices1[i];
+  }
+  for (int i = 0; i < order2; ++i) {
+    result[order1 + i] = indices2[i];
   }
   return result;
 }
@@ -251,23 +264,27 @@ public:
     return result;
   }
 
-  template <Indices contracted>
-  friend Vector<EType, drop(sizes, contracted)> contract(Vector x) {
-    static_assert(contracted.size() == 2);
-    static_assert(contracted[0] < contracted[1]);
-    static_assert(sizes[contracted[0]] == sizes[contracted[1]]);
-    using ResultVector = Vector<EType, drop(sizes, contracted)>;
+  template <Index c0, Index c1>
+  friend Vector<EType, drop(sizes, Indices{c0, c1})> contract(Vector x) {
+    static_assert(c0 < c1);
+    static_assert(sizes[c0] == sizes[c1]);
+    using ResultVector = Vector<EType, drop(sizes, Indices{c0, c1})>;
     using ResultIndices = ResultVector::IndicesType;
     ResultVector r = ResultVector::cst(0);
     for (int i = 0; i < flatSize; ++i) {
       Indices src_ind = unflatten_index(i);
-      if (src_ind[contracted[0]] == src_ind[contracted[1]]) {
-        ResultIndices dst_ind = drop(src_ind, contracted);
+      if (src_ind[c0] == src_ind[c1]) {
+        ResultIndices dst_ind = drop(src_ind, Indices{c0, c1});
         int dst_flat_idx = ResultVector::flatten_indices(dst_ind);
         r.elems[dst_flat_idx] = add(r.elems[dst_flat_idx], x.elems[i]);
       }
     }
     return r;
+  }
+
+  friend EType trace(Vector x) {
+    static_assert(order == 2);
+    return contract<0, 1>(x).elems[0];
   }
 
   friend Vector<ScalarType, sizes> reduce_add(Vector x) {
@@ -317,6 +334,41 @@ public:
 
   EType elems[flatSize];
 };
+
+template <Index c1, Index c2, typename EType, Indices sizes1, Indices sizes2>
+Vector<EType, concat(drop(sizes1, Indices{c1}), drop(sizes2, Indices{c2}))>
+contract(Vector<EType, sizes1> v1, Vector<EType, sizes2> v2) {
+  static_assert(sizes1[c1] == sizes2[c2]);
+  using Vector1 = Vector<EType, sizes1>;
+  using Vector2 = Vector<EType, sizes2>;
+  using ResultVector = Vector<EType, concat(drop(sizes1, Indices{c1}),
+                                            drop(sizes2, Indices{c2}))>;
+  using ResultIndices = ResultVector::IndicesType;
+  ResultVector r = ResultVector::cst(0);
+  for (int i1 = 0; i1 < Vector1::flatSize; ++i1) {
+    auto ind1 = Vector1::unflatten_index(i1);
+    for (int i2 = 0; i2 < Vector2::flatSize; ++i2) {
+      auto ind2 = Vector2::unflatten_index(i2);
+      if (ind1[c1] == ind2[c2]) {
+        ResultIndices dst_ind =
+            concat(drop(ind1, Indices{c1}), drop(ind2, Indices{c2}));
+        int dst_flat_idx = ResultVector::flatten_indices(dst_ind);
+        r.elems[dst_flat_idx] =
+            madd(r.elems[dst_flat_idx], v1.elems[i1], v2.elems[i2]);
+      }
+    }
+  }
+  return r;
+}
+
+template <typename EType, Indices sizes1, Indices sizes2>
+Vector<EType, {sizes1[0], sizes2[1]}> matmul(Vector<EType, sizes1> v1,
+                                             Vector<EType, sizes2> v2) {
+  static_assert(sizes1.size() == 2);
+  static_assert(sizes2.size() == 2);
+  static_assert(sizes1[1] == sizes2[0]);
+  return contract<1, 0>(v1, v2);
+}
 
 template <typename EType, Indices sizes>
 struct std::formatter<Vector<EType, sizes>> {
