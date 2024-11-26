@@ -12,6 +12,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(cmake/bazel_like_rules.cmake)
 include(cmake/platform.cmake)
 
+find_package(fmt)
+
 set(HAY_TARGET_CPU "native" CACHE STRING "Target CPU")
 message(STATUS "Target CPU: ${HAY_TARGET_CPU}")
 
@@ -59,6 +61,7 @@ cc_library(
     DEPS
         cpuinfo
         simd_base
+        fmt::fmt
 )
 
 cc_library(
@@ -77,6 +80,7 @@ cc_library(
         vector.h
     DEPS
         simd
+        fmt::fmt
 )
 
 cc_library(
@@ -89,6 +93,7 @@ cc_library(
     DEPS
         simd
         vector
+        fmt::fmt
 )
 
 cc_test(

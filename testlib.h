@@ -13,7 +13,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
-#include <format>
+#include <fmt/format.h>
 #include <random>
 #include <string_view>
 
@@ -26,7 +26,7 @@ void check_eq_impl(const X &x, const Y &y, bool expected_equality,
                    const char *xstr, const char *ystr, const char *file,
                    int line) {
   if ((x == y) != expected_equality) {
-    std::string str = std::format(
+    std::string str = fmt::format(
         "Expected {} between {}, which has the value:\n{}\n\nand {}, which "
         "has "
         "the value:\n{}\n\n",

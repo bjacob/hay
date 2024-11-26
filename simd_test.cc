@@ -167,7 +167,7 @@ template <Simd s> struct TestInt64xNFormat {
     for (int i = 0; i < elems; ++i) {
       buf[i] = 100000000000ll + i;
     }
-    std::string actual = std::format("{}", Int64xN<s>::load(buf));
+    std::string actual = fmt::format("{}", Int64xN<s>::load(buf));
     if (elems == 1) {
       CHECK_EQ(actual, "{100000000000}");
     } else if (elems == 2) {
@@ -186,7 +186,7 @@ template <Simd s> struct TestUint1xNFormat {
     for (int i = 0; i < bytes; ++i) {
       buf[i] = i;
     }
-    std::string actual = std::format("{}", Uint1xN<s>::load(buf));
+    std::string actual = fmt::format("{}", Uint1xN<s>::load(buf));
     if (bytes == 8) {
       CHECK_EQ(actual, "{0x0706050403020100}");
     } else if (bytes == 16) {

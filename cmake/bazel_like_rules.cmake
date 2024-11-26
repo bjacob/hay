@@ -46,6 +46,7 @@ function(cc_library)
     target_link_libraries(${_NAME}
       PUBLIC
         ${_RULE_DEPS}
+        fmt::fmt
     )
   endif()
   add_library(${PROJECT_NAME}::${_NAME} ALIAS ${_NAME})

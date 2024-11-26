@@ -11,7 +11,9 @@
 
 #include <array>
 #include <cstdint>
-#include <format>
+#include <numeric>
+
+#include <fmt/format.h>
 
 using Index = int;
 
@@ -22,22 +24,22 @@ template <int order> struct Indices : std::array<Index, order> {};
 template <typename... IntTypes>
 Indices(IntTypes...) -> Indices<sizeof...(IntTypes)>;
 
-template <int order> struct std::formatter<Indices<order>> {
+template <int order> struct fmt::formatter<Indices<order>> {
   using I = Indices<order>;
   template <typename FormatContext>
   auto format(const I &x, FormatContext &ctx) const {
     auto it = ctx.out();
-    it = std::format_to(it, "[");
+    it = fmt::format_to(it, "[");
     for (int i = 0; i < order; ++i) {
       if (i > 0) {
-        it = std::format_to(it, ", ");
+        it = fmt::format_to(it, ", ");
       }
-      it = std::format_to(it, "{}", x[i]);
+      it = fmt::format_to(it, "{}", x[i]);
     }
-    it = std::format_to(it, "]");
+    it = fmt::format_to(it, "]");
     return it;
   }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 template <int order, int ndrops>
@@ -371,26 +373,26 @@ Vector<EType, {sizes1[0], sizes2[1]}> matmul(Vector<EType, sizes1> v1,
 }
 
 template <typename EType, Indices sizes>
-struct std::formatter<Vector<EType, sizes>> {
+struct fmt::formatter<Vector<EType, sizes>> {
   using V = Vector<EType, sizes>;
   template <typename FormatContext>
   auto format(const V &x, FormatContext &ctx) const {
     auto it = ctx.out();
     if constexpr (V::order == 0) {
-      it = std::format_to(it, "{}", x.elems[0]);
+      it = fmt::format_to(it, "{}", x.elems[0]);
     } else {
-      it = std::format_to(it, "[");
+      it = fmt::format_to(it, "[");
       for (int i = 0; i < sizes[0]; ++i) {
         if (i > 0) {
-          it = std::format_to(it, ", ");
+          it = fmt::format_to(it, ", ");
         }
-        it = std::format_to(it, "{}", row(x, i));
+        it = fmt::format_to(it, "{}", row(x, i));
       }
-      it = std::format_to(it, "]");
+      it = fmt::format_to(it, "]");
     }
     return it;
   }
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
 };
 
 #endif // HAY_VECTOR_H_

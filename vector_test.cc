@@ -278,7 +278,7 @@ template <Simd s> struct TestVectorUint1Format {
   static void Run() {
     using E = Uint1xN<s>;
     using V = Vector<E, {3, 3}>;
-    std::string actual = std::format("{}", extract(V::seq(0), 0b000101111));
+    std::string actual = fmt::format("{}", extract(V::seq(0), 0b000101111));
     CHECK_EQ(actual, "[[1, 1, 1], [1, 0, 1], [0, 0, 0]]");
   }
 };

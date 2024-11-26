@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <bit>
 #include <cassert>
-#include <stdint.h>
+#include <cstdint>
 
 template <> inline const char *name<Simd::U64>() { return "U64"; }
 
