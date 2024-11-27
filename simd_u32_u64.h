@@ -4,21 +4,15 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_SIMD_U64_H_
-#define HAY_SIMD_U64_H_
-
-#include "simd_base.h"
+#ifndef HAY_SIMD_U32_U64_H_
+#define HAY_SIMD_U32_U64_H_
 
 #include <algorithm>
 #include <bit>
 #include <cassert>
 #include <cstdint>
 
-template <> inline const char *name<Simd::U64>() { return "U64"; }
-
-template <> inline bool detect<Simd::U64>() { return true; }
-
-template <> struct Int64xN<Simd::U64> {
+struct Int64xN {
   static constexpr int elem_bits = 64;
   static constexpr int elem_count = 1;
   int64_t val;
@@ -42,10 +36,60 @@ template <> struct Int64xN<Simd::U64> {
   }
 };
 
-template <> struct Uint1xN<Simd::U64> {
+#if defined __HIP_PLATFORM_AMD__ // u32 case
+
+struct Uint1xN {
+  static constexpr int elem_bits = 1;
+  static constexpr int elem_count = 32;
+  uint32_t val;
+
+  friend Uint1xN add(Uint1xN x, Uint1xN y) { return {x.val ^ y.val}; }
+  friend Uint1xN mul(Uint1xN x, Uint1xN y) { return {x.val & y.val}; }
+  friend Uint1xN madd(Uint1xN x, Uint1xN y, Uint1xN z) {
+    return {x.val ^ (y.val & z.val)};
+  }
+  static Uint1xN load(const void *from) {
+    return {*static_cast<const uint32_t *>(from)};
+  }
+  friend void store(void *to, Uint1xN x) {
+    *static_cast<uint32_t *>(to) = x.val;
+  }
+  friend bool operator==(Uint1xN x, Uint1xN y) { return x.val == y.val; }
+  friend Int64xN popcount(Uint1xN x) { return {std::popcount(x.val)}; }
+  static Uint1xN cst(uint8_t i) {
+    assert(i == 0 || i == 1);
+    return {i == 0 ? 0 : 0xFFFFFFFFu};
+  }
+  static Uint1xN seq(int i) {
+    assert(elem_count == 32);
+    switch (i) {
+    case 0:
+      return {0xAAAAAAAAu};
+    case 1:
+      return {0xCCCCCCCCu};
+    case 2:
+      return {0xF0F0F0F0u};
+    case 3:
+      return {0xFF00FF00u};
+    case 4:
+      return {0xFFFF0000u};
+    default:
+      return cst(0);
+    }
+  }
+  friend uint8_t extract(Uint1xN x, int i) {
+    assert(i < elem_count);
+    return static_cast<uint8_t>((x.val >> i) & 1);
+  }
+};
+
+#else // u64 case
+
+struct Uint1xN {
   static constexpr int elem_bits = 1;
   static constexpr int elem_count = 64;
   uint64_t val;
+
   friend Uint1xN add(Uint1xN x, Uint1xN y) { return {x.val ^ y.val}; }
   friend Uint1xN mul(Uint1xN x, Uint1xN y) { return {x.val & y.val}; }
   friend Uint1xN madd(Uint1xN x, Uint1xN y, Uint1xN z) {
@@ -58,12 +102,7 @@ template <> struct Uint1xN<Simd::U64> {
     *static_cast<uint64_t *>(to) = x.val;
   }
   friend bool operator==(Uint1xN x, Uint1xN y) { return x.val == y.val; }
-  friend Int64xN<Simd::U64> popcount64(Uint1xN x) {
-    return {std::popcount(x.val)};
-  }
-  friend Int64xN<Simd::U64> lzcount64(Uint1xN x) {
-    return {std::countl_zero(x.val)};
-  }
+  friend Int64xN popcount(Uint1xN x) { return {std::popcount(x.val)}; }
   static Uint1xN cst(uint8_t i) {
     assert(i == 0 || i == 1);
     return {i == 0 ? 0 : 0xFFFFFFFFFFFFFFFFu};
@@ -92,4 +131,6 @@ template <> struct Uint1xN<Simd::U64> {
   }
 };
 
-#endif // HAY_SIMD_U64_H_
+#endif // u32 or u64
+
+#endif // HAY_SIMD_U32_U64_H_

@@ -4,27 +4,13 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_SIMD_X86_H_
-#define HAY_SIMD_X86_H_
+#ifndef HAY_SIMD_X86_AVX512_H_
+#define HAY_SIMD_X86_AVX512_H_
 
 #include <cassert>
 #include <immintrin.h>
 
-#include "cpuinfo.h"
-#include "simd_base.h"
-
-#if !(defined(__AVX512VPOPCNTDQ__) && defined(__AVX512VBMI2__))
-#error Must be compiled with AVX-512-VPOPCNTDQ and AVX-512-VMBI2.
-#endif
-
-template <> inline const char *name<Simd::Avx512>() { return "AVX-512"; }
-
-template <> inline bool detect<Simd::Avx512>() {
-  const uint64_t required_bits = CPUINFO_AVX512VBMI2 | CPUINFO_AVX512VPOPCNTDQ;
-  return (getCpuInfo() & required_bits) == required_bits;
-}
-
-template <> struct Int64xN<Simd::Avx512> {
+struct Int64xN {
   static constexpr int elem_bits = 64;
   static constexpr int elem_count = 8;
   __m512i val;
@@ -57,7 +43,7 @@ template <> struct Int64xN<Simd::Avx512> {
   }
 };
 
-template <> struct Uint1xN<Simd::Avx512> {
+struct Uint1xN {
   static constexpr int elem_bits = 1;
   static constexpr int elem_count = 512;
   __m512i val;
@@ -75,12 +61,7 @@ template <> struct Uint1xN<Simd::Avx512> {
   friend bool operator==(Uint1xN x, Uint1xN y) {
     return _mm512_cmp_epi64_mask(x.val, y.val, _MM_CMPINT_EQ) == 0xFF;
   }
-  friend Int64xN<Simd::Avx512> popcount64(Uint1xN x) {
-    return {_mm512_popcnt_epi64(x.val)};
-  }
-  friend Int64xN<Simd::Avx512> lzcount64(Uint1xN x) {
-    return {_mm512_lzcnt_epi64(x.val)};
-  }
+  friend Int64xN popcount(Uint1xN x) { return {_mm512_popcnt_epi64(x.val)}; }
   static Uint1xN cst(uint8_t i) {
     return {_mm512_set1_epi8(i == 0 ? 0 : 0xFF)};
   }
@@ -122,4 +103,4 @@ template <> struct Uint1xN<Simd::Avx512> {
   }
 };
 
-#endif // HAY_SIMD_X86_H_
+#endif // HAY_SIMD_X86_AVX512_H_

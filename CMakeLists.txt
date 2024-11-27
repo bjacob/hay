@@ -33,21 +33,6 @@ add_compile_options(
     -fno-lax-vector-conversions
 )
 
-cc_library(
-    NAME
-        cpuinfo
-    HDRS
-        cpuinfo.h
-    SRCS
-        cpuinfo.cc
-)
-
-cc_library(
-    NAME
-        simd_base
-    HDRS
-        simd_base.h
-)
 
 cc_library(
     NAME
@@ -55,22 +40,11 @@ cc_library(
     HDRS
         simd.h
     SRCS
-        simd_arm.h
-        simd_u64.h
-        simd_x86.h
+        simd_arm_neon.h
+        simd_u32_u64.h
+        simd_x86_avx512.h
     DEPS
-        cpuinfo
-        simd_base
         fmt::fmt
-)
-
-cc_library(
-    NAME
-        hay
-    HDRS
-        hay.h
-    DEPS
-        simd
 )
 
 cc_library(

@@ -35,33 +35,17 @@ void check_eq_impl(const X &x, const Y &y, bool expected_equality,
   }
 }
 
-void printTestLogLine(const char *header, const char *testname,
-                      const char *simdname);
+void printTestLogLine(const char *header, const char *testname);
 
 #define CHECK(cond) check_impl(cond, #cond, __FILE__, __LINE__)
 #define CHECK_EQ(x, y) check_eq_impl((x), (y), true, #x, #y, __FILE__, __LINE__)
 #define CHECK_NE(x, y)                                                         \
   check_eq_impl((x), (y), false, #x, #y, __FILE__, __LINE__)
 
-template <template <Simd> class TestClass, Simd s>
-void TestOneSimd(const char *testname) {
-  if (detect<s>()) {
-    printTestLogLine("[ RUN     ]", testname, name<s>());
-    TestClass<s>::Run();
-    printTestLogLine("[      OK ]", testname, name<s>());
-  } else {
-    printTestLogLine("[ SKIPPED ]", testname, name<s>());
-  }
-}
-
-template <template <Simd> class TestClass> void Test(const char *testname) {
-  TestOneSimd<TestClass, Simd::U64>(testname);
-#ifdef __aarch64__
-  TestOneSimd<TestClass, Simd::Neon>(testname);
-#endif
-#ifdef __x86_64__
-  TestOneSimd<TestClass, Simd::Avx512>(testname);
-#endif
+template <typename TestClass> void Test(const char *testname) {
+  printTestLogLine("[ RUN     ]", testname);
+  TestClass::Run();
+  printTestLogLine("[      OK ]", testname);
 }
 
 #define TEST(TestClass) Test<TestClass>(#TestClass)
@@ -72,23 +56,23 @@ template <typename T> T getRandom(std::minstd_rand0 &engine) {
   return GetRandomImpl<T>::Run(engine);
 }
 
-template <Simd s> struct GetRandomImpl<Uint1xN<s>> {
-  static Uint1xN<s> Run(std::minstd_rand0 &engine) {
-    uint32_t buf[sizeof(Uint1xN<s>) / sizeof(uint32_t)];
+template <> struct GetRandomImpl<Uint1xN> {
+  static Uint1xN Run(std::minstd_rand0 &engine) {
+    uint32_t buf[sizeof(Uint1xN) / sizeof(uint32_t)];
     for (uint32_t &val : buf) {
       val = engine();
     }
-    return Uint1xN<s>::load(buf);
+    return Uint1xN::load(buf);
   }
 };
 
-template <Simd s> struct GetRandomImpl<Int64xN<s>> {
-  static Int64xN<s> Run(std::minstd_rand0 &engine) {
-    int64_t buf[Int64xN<s>::elem_count];
+template <> struct GetRandomImpl<Int64xN> {
+  static Int64xN Run(std::minstd_rand0 &engine) {
+    int64_t buf[Int64xN::elem_count];
     for (int64_t &val : buf) {
       val = engine() - engine.max() / 2;
     }
-    return Int64xN<s>::load(buf);
+    return Int64xN::load(buf);
   }
 };
 

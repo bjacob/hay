@@ -5,12 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "simd.h"
-#include "simd_base.h"
 #include "testlib.h"
 #include "vector.h"
 
-template <Simd s> struct TestVectorUint1xNLayout {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNLayout {
+  using E = Uint1xN;
   static void Run1() {
     using V = Vector<E, {3, 5, 4, 2}>;
     auto strides = V::get_strides();
@@ -35,14 +34,14 @@ template <Simd s> struct TestVectorUint1xNLayout {
   static void Run() { Run1(); }
 };
 
-template <Simd s> struct TestVectorInt64xNLoadStore {
-  using E = Int64xN<s>;
+struct TestVectorInt64xNLoadStore {
+  using E = Int64xN;
   template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
     for (int i = 0; i < 2 * V::flatSize; ++i) {
-      buf[i] = getRandom<Int64xN<s>>(engine);
+      buf[i] = getRandom<Int64xN>(engine);
     }
     V y = V::load(buf + V::flatSize);
     store(buf, y);
@@ -57,14 +56,14 @@ template <Simd s> struct TestVectorInt64xNLoadStore {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNLoadStore {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNLoadStore {
+  using E = Uint1xN;
   template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
     for (int i = 0; i < 2 * V::flatSize; ++i) {
-      buf[i] = getRandom<Uint1xN<s>>(engine);
+      buf[i] = getRandom<Uint1xN>(engine);
     }
     V y = V::load(buf + V::flatSize);
     store(buf, y);
@@ -79,8 +78,8 @@ template <Simd s> struct TestVectorUint1xNLoadStore {
   }
 };
 
-template <Simd s> struct TestVectorInt64xNArithmetic {
-  using E = Int64xN<s>;
+struct TestVectorInt64xNArithmetic {
+  using E = Int64xN;
   template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
@@ -116,8 +115,8 @@ template <Simd s> struct TestVectorInt64xNArithmetic {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNArithmetic {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNArithmetic {
+  using E = Uint1xN;
   template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
@@ -144,8 +143,8 @@ template <Simd s> struct TestVectorUint1xNArithmetic {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNRow {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNRow {
+  using E = Uint1xN;
   template <Indices sizes> static void Run() {
     using V = Vector<E, sizes>;
     std::minstd_rand0 engine;
@@ -163,8 +162,8 @@ template <Simd s> struct TestVectorUint1xNRow {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNReshape {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNReshape {
+  using E = Uint1xN;
   static void Run1() {
     using V = Vector<E, {2}>;
     std::minstd_rand0 engine;
@@ -223,8 +222,8 @@ template <Simd s> struct TestVectorUint1xNReshape {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNTranspose {
-  using E = Uint1xN<s>;
+struct TestVectorUint1xNTranspose {
+  using E = Uint1xN;
   static void Run1() {
     using V2345 = Vector<E, {2, 3, 4, 5}>;
     using V4352 = Vector<E, {4, 3, 5, 2}>;
@@ -251,9 +250,9 @@ template <Simd s> struct TestVectorUint1xNTranspose {
   static void Run() { Run1(); }
 };
 
-template <Simd s> struct TestVectorUint1xNSeq {
+struct TestVectorUint1xNSeq {
   template <Indices sizes> static void Run() {
-    using E = Uint1xN<s>;
+    using E = Uint1xN;
     using V = Vector<E, sizes>;
     for (int k = 0; k < 4; ++k) {
       V x = V::seq(k);
@@ -274,30 +273,31 @@ template <Simd s> struct TestVectorUint1xNSeq {
   }
 };
 
-template <Simd s> struct TestVectorUint1Format {
+struct TestVectorUint1Format {
   static void Run() {
-    using E = Uint1xN<s>;
+    using E = Uint1xN;
     using V = Vector<E, {3, 3}>;
-    std::string actual = fmt::format("{}", extract(V::seq(0), 0b000101111));
-    CHECK_EQ(actual, "[[1, 1, 1], [1, 0, 1], [0, 0, 0]]");
+    std::string actual = fmt::format("{}", extract(V::seq(0), 0b000011111));
+    CHECK_EQ(actual, "[[1, 1, 1], [1, 1, 0], [0, 0, 0]]");
   }
 };
 
-template <Simd s> struct TestVectorUint1xNBits {
+struct TestVectorUint1xNBits {
   static void Run() {
-    using E = Uint1xN<s>;
+    using E = Uint1xN;
     using V = Vector<E, {4, 4}>;
     V x = V::seq(0);
     for (int i = 0; i < V::flatSize; ++i) {
-      CHECK_EQ(extract(popcount64(x), 0).elems[i], i < 6 ? 32 : 0);
-      CHECK_EQ(extract(lzcount64(x), 0).elems[i], i < 6 ? 0 : 64);
+      int expected = std::min(Uint1xN::elem_count, 64) / 2;
+      CHECK_EQ(extract(popcount(x), 0).elems[i],
+               ((1 << i) <= expected) ? expected : 0);
     }
   }
 };
 
-template <Simd s> struct TestVectorUint1xNContractUnary {
+struct TestVectorUint1xNContractUnary {
   static void Run() {
-    using E = Uint1xN<s>;
+    using E = Uint1xN;
     using V33 = Vector<E, {3, 3}>;
     std::minstd_rand0 engine;
     V33 x = getRandom<V33>(engine);
@@ -316,9 +316,9 @@ template <Simd s> struct TestVectorUint1xNContractUnary {
   }
 };
 
-template <Simd s> struct TestVectorUint1xNContractBinary {
+struct TestVectorUint1xNContractBinary {
   static void Run() {
-    using E = Uint1xN<s>;
+    using E = Uint1xN;
     using V32 = Vector<E, {3, 2}>;
     using V24 = Vector<E, {2, 4}>;
     std::minstd_rand0 engine;

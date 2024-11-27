@@ -4,20 +4,13 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef HAY_SIMD_ARM_H_
-#define HAY_SIMD_ARM_H_
-
-#include "simd_base.h"
+#ifndef HAY_SIMD_ARM_NEON_H_
+#define HAY_SIMD_ARM_NEON_H_
 
 #include <arm_neon.h>
 #include <bit>
 #include <cassert>
-
-template <> inline const char *name<Simd::Neon>() { return "NEON"; }
-
-template <> inline bool detect<Simd::Neon>() { return true; }
-
-template <> struct Int64xN<Simd::Neon> {
+struct Int64xN {
   static constexpr int elem_bits = 64;
   static constexpr int elem_count = 2;
   int64x2_t val;
@@ -49,7 +42,7 @@ template <> struct Int64xN<Simd::Neon> {
   }
 };
 
-template <> struct Uint1xN<Simd::Neon> {
+struct Uint1xN {
   static constexpr int elem_bits = 1;
   static constexpr int elem_count = 128;
   uint64x2_t val;
@@ -68,16 +61,10 @@ template <> struct Uint1xN<Simd::Neon> {
     uint64x2_t c = vceqq_u64(x.val, y.val);
     return vgetq_lane_u64(c, 0) && vgetq_lane_u64(c, 1);
   }
-  friend Int64xN<Simd::Neon> popcount64(Uint1xN x) {
+  friend Int64xN popcount(Uint1xN x) {
     int64x2_t p = vdupq_n_s64(0);
     p = vsetq_lane_s64(std::popcount(vgetq_lane_u64(x.val, 0)), p, 0);
     p = vsetq_lane_s64(std::popcount(vgetq_lane_u64(x.val, 1)), p, 1);
-    return {p};
-  }
-  friend Int64xN<Simd::Neon> lzcount64(Uint1xN x) {
-    int64x2_t p = vdupq_n_s64(0);
-    p = vsetq_lane_s64(std::countl_zero(vgetq_lane_u64(x.val, 0)), p, 0);
-    p = vsetq_lane_s64(std::countl_zero(vgetq_lane_u64(x.val, 1)), p, 1);
     return {p};
   }
   static Uint1xN cst(uint8_t i) { return {vdupq_n_u64(i == 0 ? 0 : -1)}; }
@@ -110,4 +97,4 @@ template <> struct Uint1xN<Simd::Neon> {
   }
 };
 
-#endif // HAY_SIMD_ARM_H_
+#endif // HAY_SIMD_ARM_NEON_H_

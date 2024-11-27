@@ -86,8 +86,8 @@ using RowType = Vector<EType, drop(sizes, Indices{0})>;
 template <typename EType> struct Int64EType {
   using Type = EType;
 };
-template <Simd s> struct Int64EType<Uint1xN<s>> {
-  using Type = Int64xN<s>;
+template <> struct Int64EType<Uint1xN> {
+  using Type = Int64xN;
 };
 
 template <int order> inline constexpr int product(Indices<order> sizes) {
@@ -318,18 +318,10 @@ public:
     return result;
   }
 
-  friend Int64Vector popcount64(Vector x) {
+  friend Int64Vector popcount(Vector x) {
     Int64Vector result;
     for (int i = 0; i < flatSize; ++i) {
-      result.elems[i] = popcount64(x.elems[i]);
-    }
-    return result;
-  }
-
-  friend Int64Vector lzcount64(Vector x) {
-    Int64Vector result;
-    for (int i = 0; i < flatSize; ++i) {
-      result.elems[i] = lzcount64(x.elems[i]);
+      result.elems[i] = popcount(x.elems[i]);
     }
     return result;
   }

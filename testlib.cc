@@ -7,8 +7,7 @@
 #include "testlib.h"
 
 void check_fail_impl(std::string_view condstr, const char *file, int line) {
-  fprintf(stderr, "[  FAILED ]  At %s:%d:\n\n%.*s\n", file, line,
-          static_cast<int>(condstr.size()), condstr.data());
+  fmt::print(stderr, "[  FAILED ]  At {}:{}:\n\n{}\n", file, line, condstr);
   abort();
 }
 
@@ -18,7 +17,6 @@ void check_impl(bool cond, const char *condstr, const char *file, int line) {
   }
 }
 
-void printTestLogLine(const char *header, const char *testname,
-                      const char *simdname) {
-  fprintf(stderr, "%s  %s, %s\n", header, testname, simdname);
+void printTestLogLine(const char *header, const char *testname) {
+  fmt::print(stderr, "{}  {}\n", header, testname);
 }
