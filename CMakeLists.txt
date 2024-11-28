@@ -59,6 +59,15 @@ cc_library(
 
 cc_library(
     NAME
+        device
+    HDRS
+        device.h
+    SRCS
+        device.cc
+)
+
+cc_library(
+    NAME
         testlib
     HDRS
         testlib.h
@@ -89,4 +98,14 @@ cc_test(
         simd
         testlib
         vector
+)
+
+cc_test(
+    NAME
+        device_test
+    SRCS
+        device_test.cc
+    DEPS
+        device
+        testlib
 )

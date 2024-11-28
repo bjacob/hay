@@ -9,7 +9,7 @@
 
 #include <fmt/format.h>
 
-#if defined __HIP_PLATFORM_AMD__
+#if defined __HIP_DEVICE_COMPILE__
 #include "simd_u32_u64.h"
 #elif defined(__AVX512VPOPCNTDQ__) && defined(__AVX512VBMI2__)
 #include "simd_x86_avx512.h"
