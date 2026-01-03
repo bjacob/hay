@@ -6,6 +6,8 @@
 
 #include "testlib.h"
 
+namespace hay {
+
 void check_fail_impl(std::string_view condstr, const char *file, int line) {
   fmt::print(stderr, "[  FAILED ]  At {}:{}:\n\n{}\n", file, line, condstr);
   abort();
@@ -20,3 +22,5 @@ void check_impl(bool cond, const char *condstr, const char *file, int line) {
 void printTestLogLine(const char *header, const char *testname) {
   fmt::print(stderr, "{}  {}\n", header, testname);
 }
+
+} // namespace hay

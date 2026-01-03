@@ -36,34 +36,24 @@ add_compile_options(
 
 cc_library(
     NAME
-        simd
+        vec
     HDRS
-        simd.h
+        vec.h
     SRCS
-        simd_arm_neon.h
-        simd_u32_u64.h
-        simd_x86_avx512.h
+        vec_arm_neon.h
+        vec_x86_avx512.h
     DEPS
         fmt::fmt
 )
 
 cc_library(
     NAME
-        vector
+        array
     HDRS
-        vector.h
+        array.h
     DEPS
-        simd
+        vec
         fmt::fmt
-)
-
-cc_library(
-    NAME
-        device
-    HDRS
-        device.h
-    SRCS
-        device.cc
 )
 
 cc_library(
@@ -74,38 +64,28 @@ cc_library(
     SRCS
         testlib.cc
     DEPS
-        simd
-        vector
+        vec
+        array
         fmt::fmt
 )
 
 cc_test(
     NAME
-        simd_test
+        vec_test
     SRCS
-        simd_test.cc
+        vec_test.cc
     DEPS
-        simd
+        vec
         testlib
 )
 
 cc_test(
     NAME
-        vector_test
+        array_test
     SRCS
-        vector_test.cc
+        array_test.cc
     DEPS
-        simd
+        vec
         testlib
-        vector
-)
-
-cc_test(
-    NAME
-        device_test
-    SRCS
-        device_test.cc
-    DEPS
-        device
-        testlib
+        array
 )

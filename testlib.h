@@ -7,15 +7,14 @@
 #ifndef HAY_TESTLIB_H_
 #define HAY_TESTLIB_H_
 
-#include "simd.h"
-#include "vector.h"
+#include "array.h"
 
-#include <array>
 #include <cstdint>
-#include <cstdio>
 #include <fmt/format.h>
 #include <random>
 #include <string_view>
+
+namespace hay {
 
 void check_fail_impl(std::string_view condstr, const char *file, int line);
 
@@ -52,40 +51,42 @@ template <typename TestClass> void Test(const char *testname) {
 
 template <typename T> struct GetRandomImpl {};
 
-template <typename T> T getRandom(std::minstd_rand0 &engine) {
+template <typename T> T get_random(std::minstd_rand0 &engine) {
   return GetRandomImpl<T>::Run(engine);
 }
 
-template <> struct GetRandomImpl<Uint1xN> {
-  static Uint1xN Run(std::minstd_rand0 &engine) {
-    uint32_t buf[sizeof(Uint1xN) / sizeof(uint32_t)];
+template <> struct GetRandomImpl<hay::uint1_vec_t> {
+  static hay::uint1_vec_t Run(std::minstd_rand0 &engine) {
+    uint32_t buf[sizeof(hay::uint1_vec_t) / sizeof(uint32_t)];
     for (uint32_t &val : buf) {
       val = engine();
     }
-    return Uint1xN::load(buf);
+    return hay::uint1_vec_t::load(buf);
   }
 };
 
-template <> struct GetRandomImpl<Int64xN> {
-  static Int64xN Run(std::minstd_rand0 &engine) {
-    int64_t buf[Int64xN::elem_count];
+template <> struct GetRandomImpl<hay::int64_vec_t> {
+  static hay::int64_vec_t Run(std::minstd_rand0 &engine) {
+    int64_t buf[hay::int64_vec_t::elem_count];
     for (int64_t &val : buf) {
       val = engine() - engine.max() / 2;
     }
-    return Int64xN::load(buf);
+    return hay::int64_vec_t::load(buf);
   }
 };
 
 template <typename EType, Indices sizes>
-struct GetRandomImpl<Vector<EType, sizes>> {
-  using V = Vector<EType, sizes>;
+struct GetRandomImpl<Array<EType, sizes>> {
+  using V = Array<EType, sizes>;
   static V Run(std::minstd_rand0 &engine) {
     V result;
     for (int i = 0; i < V::flatSize; ++i) {
-      result.elems[i] = getRandom<EType>(engine);
+      result.elems[i] = get_random<EType>(engine);
     }
     return result;
   }
 };
+
+} // namespace hay
 
 #endif // HAY_TESTLIB_H_

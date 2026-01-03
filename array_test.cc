@@ -4,14 +4,15 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include "simd.h"
+#include "array.h"
 #include "testlib.h"
-#include "vector.h"
 
-struct TestVectorUint1xNLayout {
-  using E = Uint1xN;
+using namespace hay;
+
+struct TestUint1ArrayLayout {
+  using E = uint1_vec_t;
   static void Run1() {
-    using V = Vector<E, {3, 5, 4, 2}>;
+    using V = Array<E, {3, 5, 4, 2}>;
     auto strides = V::get_strides();
     CHECK_EQ(static_cast<int>(strides.size()), 4);
     CHECK_EQ(strides[3], 1);
@@ -34,14 +35,14 @@ struct TestVectorUint1xNLayout {
   static void Run() { Run1(); }
 };
 
-struct TestVectorInt64xNLoadStore {
-  using E = Int64xN;
+struct TestInt64ArrayLoadStore {
+  using E = int64_vec_t;
   template <Indices sizes> static void Run() {
-    using V = Vector<E, sizes>;
+    using V = Array<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
     for (int i = 0; i < 2 * V::flatSize; ++i) {
-      buf[i] = getRandom<Int64xN>(engine);
+      buf[i] = get_random<int64_vec_t>(engine);
     }
     V y = V::load(buf + V::flatSize);
     store(buf, y);
@@ -56,14 +57,14 @@ struct TestVectorInt64xNLoadStore {
   }
 };
 
-struct TestVectorUint1xNLoadStore {
-  using E = Uint1xN;
+struct TestUint1ArrayLoadStore {
+  using E = uint1_vec_t;
   template <Indices sizes> static void Run() {
-    using V = Vector<E, sizes>;
+    using V = Array<E, sizes>;
     E buf[2 * V::flatSize];
     std::minstd_rand0 engine;
     for (int i = 0; i < 2 * V::flatSize; ++i) {
-      buf[i] = getRandom<Uint1xN>(engine);
+      buf[i] = get_random<uint1_vec_t>(engine);
     }
     V y = V::load(buf + V::flatSize);
     store(buf, y);
@@ -78,13 +79,13 @@ struct TestVectorUint1xNLoadStore {
   }
 };
 
-struct TestVectorInt64xNArithmetic {
-  using E = Int64xN;
+struct TestInt64ArrayArithmetic {
+  using E = int64_vec_t;
   template <Indices sizes> static void Run() {
-    using V = Vector<E, sizes>;
+    using V = Array<E, sizes>;
     std::minstd_rand0 engine;
-    V x = getRandom<V>(engine);
-    V y = getRandom<V>(engine);
+    V x = get_random<V>(engine);
+    V y = get_random<V>(engine);
     V c = V::cst(123);
     for (int i = 0; i < V::flatSize; ++i) {
       CHECK_EQ(max(x, y).elems[i], max(x.elems[i], y.elems[i]));
@@ -96,7 +97,7 @@ struct TestVectorInt64xNArithmetic {
       }
     }
     using S = V::ScalarType;
-    using VS = Vector<S, sizes>;
+    using VS = Array<S, sizes>;
     VS rx = reduce_add(x);
     for (int i = 0; i < V::flatSize; ++i) {
       S sum = 0;
@@ -115,14 +116,14 @@ struct TestVectorInt64xNArithmetic {
   }
 };
 
-struct TestVectorUint1xNArithmetic {
-  using E = Uint1xN;
+struct TestUint1ArrayArithmetic {
+  using E = uint1_vec_t;
   template <Indices sizes> static void Run() {
-    using V = Vector<E, sizes>;
+    using V = Array<E, sizes>;
     std::minstd_rand0 engine;
-    V x = getRandom<V>(engine);
-    V y = getRandom<V>(engine);
-    V z = getRandom<V>(engine);
+    V x = get_random<V>(engine);
+    V y = get_random<V>(engine);
+    V z = get_random<V>(engine);
     V c = V::cst(1);
     for (int i = 0; i < V::flatSize; ++i) {
       CHECK_EQ(add(x, y).elems[i], add(x.elems[i], y.elems[i]));
@@ -143,12 +144,12 @@ struct TestVectorUint1xNArithmetic {
   }
 };
 
-struct TestVectorUint1xNRow {
-  using E = Uint1xN;
+struct TestUint1ArrayRow {
+  using E = uint1_vec_t;
   template <Indices sizes> static void Run() {
-    using V = Vector<E, sizes>;
+    using V = Array<E, sizes>;
     std::minstd_rand0 engine;
-    V x = getRandom<V>(engine);
+    V x = get_random<V>(engine);
     V z;
     insert_row(z, row(x, 0), 0);
     insert_row(z, row(x, 1), 1);
@@ -162,52 +163,52 @@ struct TestVectorUint1xNRow {
   }
 };
 
-struct TestVectorUint1xNReshape {
-  using E = Uint1xN;
+struct TestUint1ArrayReshape {
+  using E = uint1_vec_t;
   static void Run1() {
-    using V = Vector<E, {2}>;
+    using V = Array<E, {2}>;
     std::minstd_rand0 engine;
-    V x = getRandom<V>(engine);
+    V x = get_random<V>(engine);
     V y = reshape<{2}>(x);
     for (int i = 0; i < 1; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
   }
   static void Run2() {
-    using V23 = Vector<E, {2, 3}>;
-    using V32 = Vector<E, {3, 2}>;
+    using V23 = Array<E, {2, 3}>;
+    using V32 = Array<E, {3, 2}>;
     std::minstd_rand0 engine;
-    V23 x = getRandom<V23>(engine);
+    V23 x = get_random<V23>(engine);
     V32 y = reshape<{3, 2}>(x);
     for (int i = 0; i < 6; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
   }
   static void Run3() {
-    using V234 = Vector<E, {2, 3, 4}>;
-    using V432 = Vector<E, {4, 3, 2}>;
+    using V234 = Array<E, {2, 3, 4}>;
+    using V432 = Array<E, {4, 3, 2}>;
     std::minstd_rand0 engine;
-    V234 x = getRandom<V234>(engine);
+    V234 x = get_random<V234>(engine);
     V432 y = reshape<{4, 3, 2}>(x);
     for (int i = 0; i < 24; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
   }
   static void Run4() {
-    using V234 = Vector<E, {15}>;
-    using V432 = Vector<E, {3, 5}>;
+    using V234 = Array<E, {15}>;
+    using V432 = Array<E, {3, 5}>;
     std::minstd_rand0 engine;
-    V234 x = getRandom<V234>(engine);
+    V234 x = get_random<V234>(engine);
     V432 y = reshape<{3, 5}>(x);
     for (int i = 0; i < 15; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
     }
   }
   static void Run5() {
-    using V234 = Vector<E, {1, 2, 3}>;
-    using V432 = Vector<E, {6}>;
+    using V234 = Array<E, {1, 2, 3}>;
+    using V432 = Array<E, {6}>;
     std::minstd_rand0 engine;
-    V234 x = getRandom<V234>(engine);
+    V234 x = get_random<V234>(engine);
     V432 y = reshape<{6}>(x);
     for (int i = 0; i < 6; i++) {
       CHECK_EQ(y.elems[i], x.elems[i]);
@@ -222,13 +223,13 @@ struct TestVectorUint1xNReshape {
   }
 };
 
-struct TestVectorUint1xNTranspose {
-  using E = Uint1xN;
+struct TestUint1ArrayTranspose {
+  using E = uint1_vec_t;
   static void Run1() {
-    using V2345 = Vector<E, {2, 3, 4, 5}>;
-    using V4352 = Vector<E, {4, 3, 5, 2}>;
+    using V2345 = Array<E, {2, 3, 4, 5}>;
+    using V4352 = Array<E, {4, 3, 5, 2}>;
     std::minstd_rand0 engine;
-    V2345 x = getRandom<V2345>(engine);
+    V2345 x = get_random<V2345>(engine);
     // Check that this test won't be vacuous.
     CHECK_NE(x.elems[0], E::cst(0));
     CHECK_NE(x.elems[1], E::cst(0));
@@ -250,10 +251,10 @@ struct TestVectorUint1xNTranspose {
   static void Run() { Run1(); }
 };
 
-struct TestVectorUint1xNSeq {
+struct TestUint1ArraySeq {
   template <Indices sizes> static void Run() {
-    using E = Uint1xN;
-    using V = Vector<E, sizes>;
+    using E = uint1_vec_t;
+    using V = Array<E, sizes>;
     for (int k = 0; k < 4; ++k) {
       V x = V::seq(k);
       for (int i = 0; i < E::elem_count; ++i) {
@@ -273,41 +274,41 @@ struct TestVectorUint1xNSeq {
   }
 };
 
-struct TestVectorUint1Format {
+struct TestArrayUint1Format {
   static void Run() {
-    using E = Uint1xN;
-    using V = Vector<E, {3, 3}>;
+    using E = uint1_vec_t;
+    using V = Array<E, {3, 3}>;
     std::string actual = fmt::format("{}", extract(V::seq(0), 0b000011111));
     CHECK_EQ(actual, "[[1, 1, 1], [1, 1, 0], [0, 0, 0]]");
   }
 };
 
-struct TestVectorUint1xNBits {
+struct TestUint1ArrayBits {
   static void Run() {
-    using E = Uint1xN;
-    using V = Vector<E, {4, 4}>;
+    using E = uint1_vec_t;
+    using V = Array<E, {4, 4}>;
     V x = V::seq(0);
     for (int i = 0; i < V::flatSize; ++i) {
-      int expected = std::min(Uint1xN::elem_count, 64) / 2;
+      int expected = std::min(uint1_vec_t::elem_count, 64) / 2;
       CHECK_EQ(extract(popcount(x), 0).elems[i],
                ((1 << i) <= expected) ? expected : 0);
     }
   }
 };
 
-struct TestVectorUint1xNContractUnary {
+struct TestUint1ArrayContractUnary {
   static void Run() {
-    using E = Uint1xN;
-    using V33 = Vector<E, {3, 3}>;
+    using E = uint1_vec_t;
+    using V33 = Array<E, {3, 3}>;
     std::minstd_rand0 engine;
-    V33 x = getRandom<V33>(engine);
-    Vector<E, {}> x_contracted = contract<0, 1>(x);
+    V33 x = get_random<V33>(engine);
+    Array<E, {}> x_contracted = contract<0, 1>(x);
     CHECK_EQ(x_contracted.elems[0],
              (add(x.elems[0], add(x.elems[4], x.elems[8]))));
     CHECK_EQ(x_contracted.elems[0], trace(x));
-    using V32323 = Vector<E, {3, 2, 3, 2, 3}>;
-    using V333 = Vector<E, {3, 3, 3}>;
-    V32323 y = getRandom<V32323>(engine);
+    using V32323 = Array<E, {3, 2, 3, 2, 3}>;
+    using V333 = Array<E, {3, 3, 3}>;
+    V32323 y = get_random<V32323>(engine);
     V333 y_contracted = contract<1, 3>(y);
     CHECK_EQ(y_contracted.elems[0], (add(y.elems[0], y.elems[21])));
     CHECK_EQ(y_contracted.elems[1], (add(y.elems[1], y.elems[22])));
@@ -316,16 +317,16 @@ struct TestVectorUint1xNContractUnary {
   }
 };
 
-struct TestVectorUint1xNContractBinary {
+struct TestUint1ArrayContractBinary {
   static void Run() {
-    using E = Uint1xN;
-    using V32 = Vector<E, {3, 2}>;
-    using V24 = Vector<E, {2, 4}>;
+    using E = uint1_vec_t;
+    using V32 = Array<E, {3, 2}>;
+    using V24 = Array<E, {2, 4}>;
     std::minstd_rand0 engine;
-    V32 x = getRandom<V32>(engine);
-    V24 y = getRandom<V24>(engine);
-    Vector<E, {3, 4}> contract_result = contract<1, 0>(x, y);
-    Vector<E, {3, 4}> matmul_result = matmul(x, y);
+    V32 x = get_random<V32>(engine);
+    V24 y = get_random<V24>(engine);
+    Array<E, {3, 4}> contract_result = contract<1, 0>(x, y);
+    Array<E, {3, 4}> matmul_result = matmul(x, y);
     CHECK_EQ(contract_result, matmul_result);
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 4; ++j) {
@@ -338,17 +339,17 @@ struct TestVectorUint1xNContractBinary {
 };
 
 int main() {
-  TEST(TestVectorUint1xNLayout);
-  TEST(TestVectorInt64xNLoadStore);
-  TEST(TestVectorUint1xNLoadStore);
-  TEST(TestVectorInt64xNArithmetic);
-  TEST(TestVectorUint1xNArithmetic);
-  TEST(TestVectorUint1xNRow);
-  TEST(TestVectorUint1xNReshape);
-  TEST(TestVectorUint1xNTranspose);
-  TEST(TestVectorUint1xNSeq);
-  TEST(TestVectorUint1Format);
-  TEST(TestVectorUint1xNBits);
-  TEST(TestVectorUint1xNContractUnary);
-  TEST(TestVectorUint1xNContractBinary);
+  TEST(TestUint1ArrayLayout);
+  TEST(TestInt64ArrayLoadStore);
+  TEST(TestUint1ArrayLoadStore);
+  TEST(TestInt64ArrayArithmetic);
+  TEST(TestUint1ArrayArithmetic);
+  TEST(TestUint1ArrayRow);
+  TEST(TestUint1ArrayReshape);
+  TEST(TestUint1ArrayTranspose);
+  TEST(TestUint1ArraySeq);
+  TEST(TestArrayUint1Format);
+  TEST(TestUint1ArrayBits);
+  TEST(TestUint1ArrayContractUnary);
+  TEST(TestUint1ArrayContractBinary);
 }

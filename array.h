@@ -7,7 +7,7 @@
 #ifndef HAY_VECTOR_H_
 #define HAY_VECTOR_H_
 
-#include "simd.h"
+#include "vec.h"
 
 #include <array>
 #include <cstdint>
@@ -15,32 +15,16 @@
 
 #include <fmt/format.h>
 
+namespace hay {
+
 using Index = int;
 
 template <int order> struct Indices : std::array<Index, order> {};
 
 // Deduction guide allowing passing an initializer list of integer sizes for the
-// shape of a Vector type.
+// shape of a Array type.
 template <typename... IntTypes>
 Indices(IntTypes...) -> Indices<sizeof...(IntTypes)>;
-
-template <int order> struct fmt::formatter<Indices<order>> {
-  using I = Indices<order>;
-  template <typename FormatContext>
-  auto format(const I &x, FormatContext &ctx) const {
-    auto it = ctx.out();
-    it = fmt::format_to(it, "[");
-    for (int i = 0; i < order; ++i) {
-      if (i > 0) {
-        it = fmt::format_to(it, ", ");
-      }
-      it = fmt::format_to(it, "{}", x[i]);
-    }
-    it = fmt::format_to(it, "]");
-    return it;
-  }
-  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
-};
 
 template <int order, int ndrops>
 constexpr Indices<std::max(0, order - ndrops)> drop(Indices<order> src,
@@ -78,16 +62,16 @@ constexpr Indices<order1 + order2> concat(Indices<order1> indices1,
   return result;
 }
 
-template <typename EType, Indices sizes> class Vector;
+template <typename EType, Indices sizes> class Array;
 
 template <typename EType, Indices sizes>
-using RowType = Vector<EType, drop(sizes, Indices{0})>;
+using RowType = Array<EType, drop(sizes, Indices{0})>;
 
 template <typename EType> struct Int64EType {
   using Type = EType;
 };
-template <> struct Int64EType<Uint1xN> {
-  using Type = Int64xN;
+template <> struct Int64EType<uint1_vec_t> {
+  using Type = int64_vec_t;
 };
 
 template <int order> inline constexpr int product(Indices<order> sizes) {
@@ -105,7 +89,7 @@ inline constexpr Indices<order> permute(Indices<order> src,
   return result;
 }
 
-template <typename EType, Indices sizes> class Vector {
+template <typename EType, Indices sizes> class Array {
 public:
   static constexpr int order = sizes.size();
   static constexpr int flatSize = product(sizes);
@@ -113,9 +97,9 @@ public:
   using ScalarType = ScalarType<EType>;
   using RowType = RowType<EType, sizes>;
   using Int64EType = Int64EType<EType>::Type;
-  using Int64Vector = Vector<Int64EType, sizes>;
+  using Int64Array = Array<Int64EType, sizes>;
   template <Indices permutation>
-  using TransposedType = Vector<EType, permute(sizes, permutation)>;
+  using TransposedType = Array<EType, permute(sizes, permutation)>;
 
   using IndicesType = Indices<order>;
 
@@ -148,16 +132,16 @@ public:
     return result_indices;
   }
 
-  static Vector cst(ScalarType c) {
-    Vector result;
+  static Array cst(ScalarType c) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = EType::cst(c);
     }
     return result;
   }
 
-  static Vector load(const void *from) {
-    Vector result;
+  static Array load(const void *from) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] =
           EType::load(static_cast<const uint8_t *>(from) + i * sizeof(EType));
@@ -165,61 +149,61 @@ public:
     return result;
   }
 
-  friend void store(void *to, Vector x) {
+  friend void store(void *to, Array x) {
     for (int i = 0; i < flatSize; ++i) {
       store(static_cast<uint8_t *>(to) + i * sizeof(EType), x.elems[i]);
     }
   }
 
-  friend Vector add(Vector x, Vector y) {
-    Vector result;
+  friend Array add(Array x, Array y) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = add(x.elems[i], y.elems[i]);
     }
     return result;
   }
 
-  friend Vector sub(Vector x, Vector y) {
-    Vector result;
+  friend Array sub(Array x, Array y) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = sub(x.elems[i], y.elems[i]);
     }
     return result;
   }
 
-  friend Vector min(Vector x, Vector y) {
-    Vector result;
+  friend Array min(Array x, Array y) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = min(x.elems[i], y.elems[i]);
     }
     return result;
   }
 
-  friend Vector max(Vector x, Vector y) {
-    Vector result;
+  friend Array max(Array x, Array y) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = max(x.elems[i], y.elems[i]);
     }
     return result;
   }
 
-  friend Vector mul(Vector x, Vector y) {
-    Vector result;
+  friend Array mul(Array x, Array y) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = mul(x.elems[i], y.elems[i]);
     }
     return result;
   }
 
-  friend Vector madd(Vector x, Vector y, Vector z) {
-    Vector result;
+  friend Array madd(Array x, Array y, Array z) {
+    Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = madd(x.elems[i], y.elems[i], z.elems[i]);
     }
     return result;
   }
 
-  friend bool operator==(Vector x, Vector y) {
+  friend bool operator==(Array x, Array y) {
     for (int i = 0; i < flatSize; ++i) {
       if (!(x.elems[i] == y.elems[i])) {
         return false;
@@ -228,7 +212,7 @@ public:
     return true;
   }
 
-  friend RowType row(Vector x, int i) {
+  friend RowType row(Array x, int i) {
     RowType result;
     for (int j = 0; j < result.flatSize; ++j) {
       result.elems[j] = x.elems[j + i * result.flatSize];
@@ -236,16 +220,16 @@ public:
     return result;
   }
 
-  friend void insert_row(Vector &dst, RowType x, int i) {
+  friend void insert_row(Array &dst, RowType x, int i) {
     for (int j = 0; j < x.flatSize; ++j) {
       dst.elems[j + i * x.flatSize] = x.elems[j];
     }
   }
 
-  template <Indices newSizes> friend Vector<EType, newSizes> reshape(Vector x) {
-    using ResultVector = Vector<EType, newSizes>;
-    static_assert(ResultVector::flatSize == flatSize);
-    ResultVector result;
+  template <Indices newSizes> friend Array<EType, newSizes> reshape(Array x) {
+    using ResultArray = Array<EType, newSizes>;
+    static_assert(ResultArray::flatSize == flatSize);
+    ResultArray result;
     for (int j = 0; j < flatSize; ++j) {
       result.elems[j] = x.elems[j];
     }
@@ -253,60 +237,60 @@ public:
   }
 
   template <Indices permutation>
-  friend TransposedType<permutation> transpose(Vector x) {
-    using ResultVector = TransposedType<permutation>;
-    static_assert(ResultVector::flatSize == flatSize);
-    ResultVector result;
+  friend TransposedType<permutation> transpose(Array x) {
+    using ResultArray = TransposedType<permutation>;
+    static_assert(ResultArray::flatSize == flatSize);
+    ResultArray result;
     for (int j = 0; j < flatSize; ++j) {
       Indices source_indices = unflatten_index(j);
       Indices permuted_indices = permute(source_indices, permutation);
-      int result_index = ResultVector::flatten_indices(permuted_indices);
+      int result_index = ResultArray::flatten_indices(permuted_indices);
       result.elems[result_index] = x.elems[j];
     }
     return result;
   }
 
   template <Index c0, Index c1>
-  friend Vector<EType, drop(sizes, Indices{c0, c1})> contract(Vector x) {
+  friend Array<EType, drop(sizes, Indices{c0, c1})> contract(Array x) {
     static_assert(c0 < c1);
     static_assert(sizes[c0] == sizes[c1]);
-    using ResultVector = Vector<EType, drop(sizes, Indices{c0, c1})>;
-    using ResultIndices = ResultVector::IndicesType;
-    ResultVector r = ResultVector::cst(0);
+    using ResultArray = Array<EType, drop(sizes, Indices{c0, c1})>;
+    using ResultIndices = ResultArray::IndicesType;
+    ResultArray r = ResultArray::cst(0);
     for (int i = 0; i < flatSize; ++i) {
       Indices src_ind = unflatten_index(i);
       if (src_ind[c0] == src_ind[c1]) {
         ResultIndices dst_ind = drop(src_ind, Indices{c0, c1});
-        int dst_flat_idx = ResultVector::flatten_indices(dst_ind);
+        int dst_flat_idx = ResultArray::flatten_indices(dst_ind);
         r.elems[dst_flat_idx] = add(r.elems[dst_flat_idx], x.elems[i]);
       }
     }
     return r;
   }
 
-  friend EType trace(Vector x) {
+  friend EType trace(Array x) {
     static_assert(order == 2);
     return contract<0, 1>(x).elems[0];
   }
 
-  friend Vector<ScalarType, sizes> reduce_add(Vector x) {
-    Vector<ScalarType, sizes> result;
+  friend Array<ScalarType, sizes> reduce_add(Array x) {
+    Array<ScalarType, sizes> result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = reduce_add(x.elems[i]);
     }
     return result;
   }
 
-  friend Vector<ScalarType, sizes> extract(Vector x, int i) {
-    Vector<ScalarType, sizes> result;
+  friend Array<ScalarType, sizes> extract(Array x, int i) {
+    Array<ScalarType, sizes> result;
     for (int j = 0; j < flatSize; ++j) {
       result.elems[j] = extract(x.elems[j], i);
     }
     return result;
   }
 
-  static Vector seq(int i) {
-    Vector result;
+  static Array seq(int i) {
+    Array result;
     int j = 0;
     for (; (1 << j) < EType::elem_count && j < flatSize; ++j) {
       result.elems[j] = EType::seq(j);
@@ -318,8 +302,8 @@ public:
     return result;
   }
 
-  friend Int64Vector popcount(Vector x) {
-    Int64Vector result;
+  friend Int64Array popcount(Array x) {
+    Int64Array result;
     for (int i = 0; i < flatSize; ++i) {
       result.elems[i] = popcount(x.elems[i]);
     }
@@ -330,23 +314,23 @@ public:
 };
 
 template <Index c1, Index c2, typename EType, Indices sizes1, Indices sizes2>
-Vector<EType, concat(drop(sizes1, Indices{c1}), drop(sizes2, Indices{c2}))>
-contract(Vector<EType, sizes1> v1, Vector<EType, sizes2> v2) {
+Array<EType, concat(drop(sizes1, Indices{c1}), drop(sizes2, Indices{c2}))>
+    contract(Array<EType, sizes1> v1, Array<EType, sizes2> v2) {
   static_assert(sizes1[c1] == sizes2[c2]);
-  using Vector1 = Vector<EType, sizes1>;
-  using Vector2 = Vector<EType, sizes2>;
-  using ResultVector = Vector<EType, concat(drop(sizes1, Indices{c1}),
-                                            drop(sizes2, Indices{c2}))>;
-  using ResultIndices = ResultVector::IndicesType;
-  ResultVector r = ResultVector::cst(0);
-  for (int i1 = 0; i1 < Vector1::flatSize; ++i1) {
-    auto ind1 = Vector1::unflatten_index(i1);
-    for (int i2 = 0; i2 < Vector2::flatSize; ++i2) {
-      auto ind2 = Vector2::unflatten_index(i2);
+  using Array1 = Array<EType, sizes1>;
+  using Array2 = Array<EType, sizes2>;
+  using ResultArray = Array<EType, concat(drop(sizes1, Indices{c1}),
+                                          drop(sizes2, Indices{c2}))>;
+  using ResultIndices = ResultArray::IndicesType;
+  ResultArray r = ResultArray::cst(0);
+  for (int i1 = 0; i1 < Array1::flatSize; ++i1) {
+    auto ind1 = Array1::unflatten_index(i1);
+    for (int i2 = 0; i2 < Array2::flatSize; ++i2) {
+      auto ind2 = Array2::unflatten_index(i2);
       if (ind1[c1] == ind2[c2]) {
         ResultIndices dst_ind =
             concat(drop(ind1, Indices{c1}), drop(ind2, Indices{c2}));
-        int dst_flat_idx = ResultVector::flatten_indices(dst_ind);
+        int dst_flat_idx = ResultArray::flatten_indices(dst_ind);
         r.elems[dst_flat_idx] =
             madd(r.elems[dst_flat_idx], v1.elems[i1], v2.elems[i2]);
       }
@@ -356,17 +340,37 @@ contract(Vector<EType, sizes1> v1, Vector<EType, sizes2> v2) {
 }
 
 template <typename EType, Indices sizes1, Indices sizes2>
-Vector<EType, {sizes1[0], sizes2[1]}> matmul(Vector<EType, sizes1> v1,
-                                             Vector<EType, sizes2> v2) {
+Array<EType, {sizes1[0], sizes2[1]}> matmul(Array<EType, sizes1> v1,
+                                            Array<EType, sizes2> v2) {
   static_assert(sizes1.size() == 2);
   static_assert(sizes2.size() == 2);
   static_assert(sizes1[1] == sizes2[0]);
   return contract<1, 0>(v1, v2);
 }
 
-template <typename EType, Indices sizes>
-struct fmt::formatter<Vector<EType, sizes>> {
-  using V = Vector<EType, sizes>;
+} // namespace hay
+
+template <int order> struct fmt::formatter<hay::Indices<order>> {
+  using I = hay::Indices<order>;
+  template <typename FormatContext>
+  auto format(const I &x, FormatContext &ctx) const {
+    auto it = ctx.out();
+    it = fmt::format_to(it, "[");
+    for (int i = 0; i < order; ++i) {
+      if (i > 0) {
+        it = fmt::format_to(it, ", ");
+      }
+      it = fmt::format_to(it, "{}", x[i]);
+    }
+    it = fmt::format_to(it, "]");
+    return it;
+  }
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
+};
+
+template <typename EType, hay::Indices sizes>
+struct fmt::formatter<hay::Array<EType, sizes>> {
+  using V = hay::Array<EType, sizes>;
   template <typename FormatContext>
   auto format(const V &x, FormatContext &ctx) const {
     auto it = ctx.out();
